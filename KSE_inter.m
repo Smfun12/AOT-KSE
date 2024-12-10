@@ -1,4 +1,3 @@
-
 function KSE_inter()
 clear; clc; close all;
 addpath("utils/");
@@ -6,10 +5,11 @@ addpath("utils/");
 [Ks] = load("K.mat");
 
 p = initDefaultEnv(); 
+p.prod = false;
 p.var_Ks = Ks.Ks;
 p.L = log4m.getLogger('logs.txt');
 
-p.big_basis = db.big_basis;
+p.big_basis = db.datas;
 vars = DataAssimilationVariables_KSE(p);
 p.size_vars = length(vars);
 
@@ -39,7 +39,7 @@ for ti = 1:p.num_timesteps
     p.plot_time = [p.plot_time; ti*p.dt];
     error_counter = 0;
     for i=1:p.size_vars
-        % if vars(i).error < 1e-14
+        % if vars(i).error < 1e-15
         %     error_counter = error_counter + 1;
         %     continue
         % end
@@ -56,8 +56,7 @@ for ti = 1:p.num_timesteps
     end
 
 end
-% save("vars.mat", "vars")
-% save("p.mat", "p")
+
 plotFinalErrorForVars(vars, p)
 % plotMeanVelocity(p)
 

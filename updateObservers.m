@@ -4,16 +4,16 @@ function [var] = updateObservers(var, p, u_hat)
     switch var.observer_type
         case "Uniform"
             var.sensors = var.sensors;
-            h = p.x(var.sensors(2))-p.x(var.sensors(1));
-            nu = 1;
-            my_k = 0.8;
-            nudg_parameter = my_k / nu;
-            c = p.Lx/pi;
-            C = (4/3)^(3/4)* (nudg_parameter^5*c/my_k)^(-1/4);
-            u_x_star = abs(gradient(ref_solution));
-            K = (h/C).^(4/3) + u_x_star;
-            var.Ks = [var.Ks, K'];
-            Ks = var.Ks;
+            % h = p.x(var.sensors(2))-p.x(var.sensors(1));
+            % nu = 1;
+            % my_k = 0.8;
+            % nudg_parameter = my_k / nu;
+            % c = p.Lx/pi;
+            % C = (4/3)^(3/4)* (nudg_parameter^5*c/my_k)^(-1/4);
+            % u_x_star = abs(gradient(ref_solution));
+            % K = (h/C).^(4/3) + u_x_star;
+            % var.Ks = [var.Ks, K'];
+            % Ks = var.Ks;
             % save("K.mat", "Ks")
         case "Creeps"
             sensors = var.sensors;
@@ -167,29 +167,48 @@ function [var] = updateObservers(var, p, u_hat)
             
             % Direction: 1 - left, 2 - right
             dir = 2;
-            F_temp = griddedInterpolant(p.x, h_hat, 'linear');
-            
+            F_temp = griddedInterpolant(p.x, h_hat, 'nearest');
+            % F_temp = polyfit(p.x, h_hat, 6);
+
+            % if p.ti == 200
+            %     disp("here_")
+            % end
+
             if p.ti == 1 || mod(p.ti, var.targets_frequency) == 0
+            % if p.ti == 1 || var.distances(end) < p.dx
                 var.target_sensors = p.x(idx);
-                var.target_sensors = getTargetSensors(F_temp, dir, var.target_sensors, p.Lx);
+                if var.target_off_grid
+                    var.target_sensors = getTargetSensors(F_temp, dir, var.target_sensors, p.Lx);
+                else
+                    var.target_sensors = getTargetSensorsNearest(h_hat, dir, idx, p);
+                end
                 var.number_target_sensors = [var.number_target_sensors, length(var.target_sensors)];
             end
             
             var.old_locations = var.sensors;
             % spatial_sensors = moveSpatialToTargets(var.sensors, var.target_sensors, p, ref_solution);
-            spatial_sensors = moveSpatialToTargetsPeriodically(var.sensors, var.target_sensors, p, ref_solution);
+            if var.target_off_grid
+                [spatial_sensors,distanceSum] = moveSpatialToTargetsPeriodically(var.sensors, var.target_sensors, p, ref_solution);
+            else
+                [spatial_sensors,distanceSum] = moveSpatialToTargetsPeriodically(var.sensors, p.x(var.target_sensors), p, ref_solution);
+            end
             
             var.sensors = spatial_sensors;
+            var.distances = [var.distances, norm(distanceSum)/length(var.sensors)];
+            % if length(var.distances) > 1 && var.distances(end) == var.distances(end-1)
+            %     disp("Error");
+            % end
+            % disp(var.distances(end))
             % var.sensors = p.x(1:3:p.N);  
             if p.ti == p.num_timesteps
-                mean(var.number_target_sensors)
+                disp("Average number of target sensors:" + mean(var.number_target_sensors))
             end
 
          case "Unphysical-Target-Sensors"
             
             u_x_star = abs(gradient(ref_solution));
-            % [~, idx] = max(u_x_star);
-            idx = 1;
+            [~, idx] = max(u_x_star);
+            % idx = 1;
             [r,c] = size(p.var_Ks);
             if p.ti <= c
                 big_K = p.var_Ks(:, p.ti);
@@ -205,11 +224,13 @@ function [var] = updateObservers(var, p, u_hat)
             
             % Direction: 1 - left, 2 - right
             dir = 2;
-            F_temp = griddedInterpolant(p.x, h_hat, 'linear');
+            F_temp = griddedInterpolant(p.x, h_hat, 'nearest');
+            % F_temp = polyfit(p.x, h_hat, 6);
           
             if p.ti == 1 || mod(p.ti, var.targets_frequency) == 0
                 var.target_sensors = p.x(idx);
                 var.target_sensors = getTargetSensors(F_temp, dir, var.target_sensors, p.Lx);
+                % var.target_sensors = getTargetSensorsNearest(h_hat, dir, idx, p);
             end
           
             var.sensors = var.target_sensors;
@@ -224,12 +245,14 @@ function [spatial_sensors] = getTargetSensors(F_temp, dir, spatial_sensors, Lx)
        
         % Going in the left direction
         if dir == 1
+            % distance_for_next_sensor = polyval(F_temp, spatial_sensors(1));
             distance_for_next_sensor = F_temp(spatial_sensors(1));
-            next_pt = spatial_sensors(1) + (-1)^dir * distance_for_next_sensor;
+            next_pt = spatial_sensors(1) - distance_for_next_sensor;
         % Going in the right direction
         else
             distance_for_next_sensor = F_temp(spatial_sensors(end));
-            next_pt = spatial_sensors(end) + (-1)^dir * distance_for_next_sensor;
+            % distance_for_next_sensor = polyval(F_temp, spatial_sensors(end));
+            next_pt = spatial_sensors(end) + distance_for_next_sensor;
         end
     
         % sensors = [sensors, idx];
@@ -238,7 +261,7 @@ function [spatial_sensors] = getTargetSensors(F_temp, dir, spatial_sensors, Lx)
             dir = 1;
             continue;
         elseif next_pt < 0
-            break
+            break;
         end
         if dir == 1
             spatial_sensors = [next_pt, spatial_sensors];
@@ -248,10 +271,40 @@ function [spatial_sensors] = getTargetSensors(F_temp, dir, spatial_sensors, Lx)
     end
 end
 
+function [spatial_sensors] = getTargetSensorsNearest(h_hat, dir, idx, p)
+    spatial_sensors = [];
+    start_idx = idx;
+    while true
+        % Get location for next sensor h^(i) 
+        distance_for_next_sensor = h_hat(idx);
+        next_pt = p.x(idx) + (-1)^dir * distance_for_next_sensor;
+        % Calculate euclidean distance over all grid points
+        distances = sqrt(sum((p.x' - next_pt).^2, 2));
+        % Find such index on x
+        prev_idx = idx;
+        [~, idx] = min(distances);
+        
+        if prev_idx == idx
+            idx = idx+(-1)^dir;
+        end
+
+        spatial_sensors = [spatial_sensors, idx];
+        if idx == p.N
+            % break
+            idx = start_idx;
+            if idx == 1
+                break
+            end
+            dir = 1;
+        elseif idx == 1
+            break
+
+        end
+    end
+    spatial_sensors = sort(unique(spatial_sensors));
+end
+
 function [h] = sensorsToH(sensors, p)
     h = zeros(size(p.x));
     h(1:length(sensors)-1) = diff(sensors);
-end
-
-function backtrackCoefficientsForTargets(h)
 end

@@ -30,7 +30,7 @@ function [p] = plotVar(var, p, u_hat)
     ref_solution = ifft(u_hat,'symmetric');
     plot(p.x, ref_solution);
     hold on;
-    if var.grid_sensors
+    if var.off_grid
         scatter(var.sensors, zeros(length(var.sensors)), 'r', 'filled')
     else
         scatter(p.x(var.sensors), zeros(length(var.sensors)), 'r', 'filled')

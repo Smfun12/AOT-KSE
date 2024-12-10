@@ -1,10 +1,11 @@
-function [spatial_sensors] = moveSpatialToTargetsPeriodically(spatial_sensors, target_sensors, p, ref_solution)
+function [spatial_sensors, distanceSum] = moveSpatialToTargetsPeriodically(spatial_sensors, target_sensors, p, ref_solution)
     interpolant = griddedInterpolant(p.x, ref_solution, 'linear');
     temp_list_of_used_indices = [];
     spatial_sensors_extended = [spatial_sensors(end)-p.Lx, spatial_sensors, p.Lx + spatial_sensors(1)];
+    distanceSum =[];
     for i=1:length(target_sensors)
         if i > length(spatial_sensors)
-            p.L.info("moveSpatialToTargetsPeriodically", "All references sensors have been mapped to target")
+            % p.L.info("moveSpatialToTargetsPeriodically", "All references sensors have been mapped to target")
             break
         end
         periodic_case = false;
@@ -59,6 +60,10 @@ function [spatial_sensors] = moveSpatialToTargetsPeriodically(spatial_sensors, t
         end
         
         spatial_sensors(closest_idx) = new_point;
+        % if periodic_case
+        %     disp("Big vector")
+        % end
+        distanceSum = [distanceSum, abs(direction_vector)];
         
     end
     spatial_sensors = sort(unique(spatial_sensors));

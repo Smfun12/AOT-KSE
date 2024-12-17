@@ -8,8 +8,11 @@ function [var] = updateAOTSolution(var, p, u_hat, u_hat_old)
         spatial_sensors = p.x(var.sensors);
     end
     
-    [aot_obs, var] = interpolate_observations(p, ref_solution, spatial_sensors, var);
-    [aot_hat] = interpolate_v(p, aot_sol, spatial_sensors);
+    [aot_obs, bsv_data] = interpolate_observations(p, ref_solution, spatial_sensors, var);
+    [aot_hat, aot_sensors] = interpolate_v(p, aot_sol, spatial_sensors);
+    
+
+    var.interpolation_error = [var.interpolation_error, norm(ref_solution - aot_obs)];
 
     if isfield(var, "basis_counter")
         if mod(var.basis_counter,var.temp_basis_size) ~= 0
@@ -29,10 +32,21 @@ function [var] = updateAOTSolution(var, p, u_hat, u_hat_old)
 end
 
 
-function [vq1, var] = interpolate_observations(p, ref_solution, spatial_sensors, var)
+function [vq1, bsv_data] = interpolate_observations(p, ref_solution, spatial_sensors, var)
     F_temp = griddedInterpolant(p.x, ref_solution, var.interpolation_type);
     bsv_data = F_temp(spatial_sensors);
-    var.interpolation_error = [var.interpolation_error, norm(bsv_data - ref_solution(1:20:p.N))];
+    
+    closest_points = zeros(size(spatial_sensors));
+    % Loop through each point
+    for i = 1:length(spatial_sensors)
+        % Compute the absolute distance to all grid points
+        [~, idx] = min(abs(p.x - spatial_sensors(i)));
+        % Find the closest grid point
+        closest_points(i) = ref_solution(idx);
+    end
+
+    
+
     x_pts = spatial_sensors';
     
     %Copy data at rightmost sensor and leftmost sensor to extend periodically
@@ -48,7 +62,7 @@ function [vq1, var] = interpolate_observations(p, ref_solution, spatial_sensors,
     vq1 = F1(p.x);
 end
 
-function [vq2] = interpolate_v(p, aot_sol, spatial_sensors)
+function [vq2, aot_sensors] = interpolate_v(p, aot_sol, spatial_sensors)
 
     F2 = griddedInterpolant(p.x, aot_sol);
     aot_sensors = F2(spatial_sensors);

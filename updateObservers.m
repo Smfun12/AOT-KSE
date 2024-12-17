@@ -1,4 +1,4 @@
-function [var] = updateObservers(var, p, u_hat)
+function [var] = updateObservers(var, p, u_hat, aot_sol)
     ref_solution = ifft(u_hat, 'symmetric');
     interpolant = griddedInterpolant(p.x, ref_solution, 'linear');
     switch var.observer_type
@@ -149,7 +149,7 @@ function [var] = updateObservers(var, p, u_hat)
             K = rho + abs(gradient(ref_solution));
         case "Target-Sensors"
 
-            u_x_star = abs(gradient(ref_solution));
+            u_x_star = abs(gradient(aot_sol));
             [~, idx] = max(u_x_star);
             
             [r,c] = size(p.var_Ks);
@@ -175,13 +175,14 @@ function [var] = updateObservers(var, p, u_hat)
             % end
 
             if p.ti == 1 || mod(p.ti, var.targets_frequency) == 0
+                % disp("Changed target locations")
             % if p.ti == 1 || var.distances(end) < p.dx
                 var.target_sensors = p.x(idx);
-                if var.target_off_grid
+                % if var.target/_off_grid
                     var.target_sensors = getTargetSensors(F_temp, dir, var.target_sensors, p.Lx);
-                else
-                    var.target_sensors = getTargetSensorsNearest(h_hat, dir, idx, p);
-                end
+                % else
+                %     var.target_sensors = getTargetSensorsNearest(h_hat, dir, idx, p);
+                % end
                 var.number_target_sensors = [var.number_target_sensors, length(var.target_sensors)];
             end
             
@@ -202,11 +203,12 @@ function [var] = updateObservers(var, p, u_hat)
             % var.sensors = p.x(1:3:p.N);  
             if p.ti == p.num_timesteps
                 disp("Average number of target sensors:" + mean(var.number_target_sensors))
+                % boxplot(var.number_target_sensors)
             end
 
          case "Unphysical-Target-Sensors"
             
-            u_x_star = abs(gradient(ref_solution));
+            u_x_star = abs(gradient(aot_sol));
             [~, idx] = max(u_x_star);
             % idx = 1;
             [r,c] = size(p.var_Ks);
@@ -229,8 +231,8 @@ function [var] = updateObservers(var, p, u_hat)
           
             if p.ti == 1 || mod(p.ti, var.targets_frequency) == 0
                 var.target_sensors = p.x(idx);
-                var.target_sensors = getTargetSensors(F_temp, dir, var.target_sensors, p.Lx);
-                % var.target_sensors = getTargetSensorsNearest(h_hat, dir, idx, p);
+                % var.target_sensors = getTargetSensors(F_temp, dir, var.target_sensors, p.Lx);
+                var.target_sensors = getTargetSensorsNearest(h_hat, dir, idx, p);
             end
           
             var.sensors = var.target_sensors;

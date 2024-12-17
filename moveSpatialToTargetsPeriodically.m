@@ -3,9 +3,12 @@ function [spatial_sensors, distanceSum] = moveSpatialToTargetsPeriodically(spati
     temp_list_of_used_indices = [];
     spatial_sensors_extended = [spatial_sensors(end)-p.Lx, spatial_sensors, p.Lx + spatial_sensors(1)];
     distanceSum =[];
+    % if length(spatial_sensors) > length(target_sensors)
+    %     disp("Some spatial sensors are staying in the same place")
+    % end
     for i=1:length(target_sensors)
         if i > length(spatial_sensors)
-            % p.L.info("moveSpatialToTargetsPeriodically", "All references sensors have been mapped to target")
+            % disp("All references sensors have been mapped to target")
             break
         end
         periodic_case = false;

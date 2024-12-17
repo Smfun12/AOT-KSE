@@ -41,14 +41,16 @@ for ti = 1:p.num_timesteps
     for i=1:p.size_vars
         % if vars(i).error < 1e-15
         %     error_counter = error_counter + 1;
+        %     vars(i).interpolation_error = [vars(i).interpolation_error, vars(i).interpolation_error(end)];
         %     continue
         % end
-        [var] = updateObservers(vars(i), p, u_hat);
+        [var] = updateObservers(vars(i), p, u_hat, vars(i).aot_hat);
         [var] = updateAOTSolution(var, p, u_hat, u_hat_old);
-        vars(i) = var;
+        
         if mod(ti,p.show)==0
-            plotVar(vars(i),p, u_hat);
+            [var] = plotVar(var,p, u_hat);
         end
+        vars(i) = var;
         
     end
     if error_counter == p.size_vars

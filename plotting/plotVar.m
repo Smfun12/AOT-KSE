@@ -33,28 +33,36 @@ function [var] = plotVar(var, p, u_hat)
     else
         set(0 ,"CurrentFigure", var.sens_fig)
     end
-    
+
     ref_solution = ifft(u_hat,'symmetric');
     plot(p.x, ref_solution, "LineWidth",2, "DisplayName", "Ground-truth solution");
     hold on;
+    % plot(p.Lx+p.x, ref_solution, "LineWidth",2, "DisplayName", "Ground-truth solution");
     % aot_obs = interpolate_observations(p, ref_solution, p.x(var.sensors), var);
     % plot(p.x, aot_obs, "LineWidth",2, "Color", [0.9290 0.6940 0.1250], "Marker","x", "DisplayName", "Intepolated solution");
 
-    
+    sensor_size = 100;
     if var.off_grid 
         
         if contains(var.observer_type, "Target")
-            scatter(var.sensors, zeros(length(var.sensors)), 100, 'blue', 'filled', "DisplayName", var.observer_type + "(#sensors=" + length(var.sensors) + ", frequency=" + var.targets_frequency + ")")
-            scatter(p.x(1:10:p.N), zeros(length(p.x(1:10:p.N))), 100, 'red', 'filled', "DisplayName", "Uniform(103)")
-            % scatter(var.target_sensors, zeros(length(var.target_sensors)), 200, "red", "filled", "DisplayName", "Target Locations")
+            % scatter(var.sensors, .5+zeros(1, length(var.sensors)), sensor_size, 'blue', 'filled', "DisplayName", var.observer_type + "(#sensors=" + length(var.sensors) + ", frequency=" + var.targets_frequency + ")")
+            scatter(p.x(1:10:p.N), zeros(length(p.x(1:10:p.N))), 100, 'blue', 'filled', "DisplayName", "Uniform(103)")
+            scatter(var.target_sensors, .5+zeros(length(var.target_sensors)), sensor_size, "red", "filled", "DisplayName", "Target Locations" + "(#sensors=" + length(var.target_sensors) + ")")
+            % scatter(var.target_sensors(1), .5, 100, "filled", "green")
+            % scatter(p.Lx+var.target_sensors, .5+zeros(length(var.target_sensors)), sensor_size, "red", "filled", "DisplayName", "Target Locations" + "(#sensors=" + length(var.target_sensors) + ")")
+            % scatter(p.Lx+var.target_sensors(1), .5, 100, "filled", "green")
             legendUnq();
             legend;
             % legend(["", var.observer_type + "(#sensors=" + length(var.sensors) + ")", "Target locations"])
+        else
+            scatter(var.sensors, zeros(length(var.sensors)), sensor_size, 'r', 'filled', "DisplayName", var.observer_type + "(#sensors=" + length(var.sensors) + ", amplitude=" + var.amplitude + "%)")
+            legendUnq();
+            legend;
         end
     else
         if contains(var.observer_type, "Target")
-            scatter(p.x(var.sensors), zeros(length(var.sensors)), 100, 'blue', 'filled', "DisplayName", var.observer_type + "(#sensors=" + length(var.sensors) + ", frequency=" + var.targets_frequency + ")")
-            scatter(p.x(1:10:p.N), zeros(length(p.x(1:10:p.N))), 100, 'red', 'filled', "DisplayName", "Uniform(103)")
+            scatter(p.x(var.sensors), zeros(length(var.sensors)), sensor_size, 'blue', 'filled', "DisplayName", var.observer_type + "(#sensors=" + length(var.sensors) + ", frequency=" + var.targets_frequency + ")")
+            scatter(p.x(1:10:p.N), zeros(length(p.x(1:10:p.N))), sensor_size, 'red', 'filled', "DisplayName", "Uniform(103)")
             % scatter(var.target_sensors, zeros(length(var.target_sensors)), 200, "red", "filled", "DisplayName", "Target Locations")
             legendUnq();
             legend;
@@ -73,10 +81,10 @@ function [var] = plotVar(var, p, u_hat)
     if contains(var.observer_type, "Lagrangian")
         legend(["", var.observer_type + "(#sensors=" + length(var.sensors) + ", a=" + var.amplitude + ")"])
     end
-    % drawnow;
+    drawnow;
     frame = getframe(var.sens_fig);
     var.im{p.ti} = frame2im(frame);
-    pause(0.5);
+    % pause(0.5);
 end
 
 

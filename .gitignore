@@ -2,3 +2,5 @@ data/
 gif/
 *.gif
 *.mat
+.DS_Store
+**/*.asv

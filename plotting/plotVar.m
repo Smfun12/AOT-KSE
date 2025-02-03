@@ -37,40 +37,14 @@ function [var] = plotVar(var, p, u_hat)
     ref_solution = ifft(u_hat,'symmetric');
     plot(p.x, ref_solution, "LineWidth",2, "DisplayName", "Ground-truth solution");
     hold on;
-    % plot(p.Lx+p.x, ref_solution, "LineWidth",2, "DisplayName", "Ground-truth solution");
-    % aot_obs = interpolate_observations(p, ref_solution, p.x(var.sensors), var);
-    % plot(p.x, aot_obs, "LineWidth",2, "Color", [0.9290 0.6940 0.1250], "Marker","x", "DisplayName", "Intepolated solution");
 
     sensor_size = 100;
     if var.off_grid 
-        
-        if contains(var.observer_type, "Target")
-            % scatter(var.sensors, .5+zeros(1, length(var.sensors)), sensor_size, 'blue', 'filled', "DisplayName", var.observer_type + "(#sensors=" + length(var.sensors) + ", frequency=" + var.targets_frequency + ")")
-            scatter(p.x(1:10:p.N), zeros(length(p.x(1:10:p.N))), 100, 'blue', 'filled', "DisplayName", "Uniform(103)")
-            scatter(var.target_sensors, .5+zeros(length(var.target_sensors)), sensor_size, "red", "filled", "DisplayName", "Target Locations" + "(#sensors=" + length(var.target_sensors) + ")")
-            % scatter(var.target_sensors(1), .5, 100, "filled", "green")
-            % scatter(p.Lx+var.target_sensors, .5+zeros(length(var.target_sensors)), sensor_size, "red", "filled", "DisplayName", "Target Locations" + "(#sensors=" + length(var.target_sensors) + ")")
-            % scatter(p.Lx+var.target_sensors(1), .5, 100, "filled", "green")
-            legendUnq();
-            legend;
-            % legend(["", var.observer_type + "(#sensors=" + length(var.sensors) + ")", "Target locations"])
-        else
-            scatter(var.sensors, zeros(length(var.sensors)), sensor_size, 'r', 'filled', "DisplayName", var.observer_type + "(#sensors=" + length(var.sensors) + ", amplitude=" + var.amplitude + "%)")
-            legendUnq();
-            legend;
-        end
+        scatter(var.sensors, zeros(length(var.sensors)), sensor_size, 'r', 'filled', "DisplayName", var.observer_type + "(#sensors=" + length(var.sensors) + ", amplitude=" + var.amplitude + "%)")
+        legendUnq();
+        legend;
     else
-        if contains(var.observer_type, "Target")
-            scatter(p.x(var.sensors), zeros(length(var.sensors)), sensor_size, 'blue', 'filled', "DisplayName", var.observer_type + "(#sensors=" + length(var.sensors) + ", frequency=" + var.targets_frequency + ")")
-            scatter(p.x(1:10:p.N), zeros(length(p.x(1:10:p.N))), sensor_size, 'red', 'filled', "DisplayName", "Uniform(103)")
-            % scatter(var.target_sensors, zeros(length(var.target_sensors)), 200, "red", "filled", "DisplayName", "Target Locations")
-            legendUnq();
-            legend;
-            % legend(["", var.observer_type + "(#sensors=" + length(var.sensors) + ")", "Target locations"])
-        else
-            scatter(p.x(var.sensors), zeros(length(var.sensors)), 'r', 'filled')
-        end
-        
+        scatter(p.x(var.sensors), zeros(length(var.sensors)), 'r', 'filled')
     end
     
     
@@ -82,41 +56,8 @@ function [var] = plotVar(var, p, u_hat)
         legend(["", var.observer_type + "(#sensors=" + length(var.sensors) + ", a=" + var.amplitude + ")"])
     end
     drawnow;
-    frame = getframe(var.sens_fig);
-    var.im{p.ti} = frame2im(frame);
-    % pause(0.5);
 end
 
-
-function [vq1, bsv_data] = interpolate_observations(p, ref_solution, spatial_sensors, var)
-    F_temp = griddedInterpolant(p.x, ref_solution, var.interpolation_type);
-    bsv_data = F_temp(spatial_sensors);
-    
-    closest_points = zeros(size(spatial_sensors));
-    % Loop through each point
-    for i = 1:length(spatial_sensors)
-        % Compute the absolute distance to all grid points
-        [~, idx] = min(abs(p.x - spatial_sensors(i)));
-        % Find the closest grid point
-        closest_points(i) = ref_solution(idx);
-    end
-
-    
-
-    x_pts = spatial_sensors';
-    
-    %Copy data at rightmost sensor and leftmost sensor to extend periodically
-    u_data1 = [bsv_data(end),bsv_data, bsv_data(1) ];
-
-    x_pts_per = x_pts;
-    %Add sensors closest to end of domain periodically
-    x_pts_per = [x_pts_per(end) - p.Lx; x_pts_per; x_pts_per(1) + p.Lx];
-
-    % Note that x_pts has been sorted, so x_pts(1) is the left most sensor,
-    % and x_pts(end) is the right most sensor.
-    F1 = griddedInterpolant(x_pts_per, u_data1.');
-    vq1 = F1(p.x);
-end
 function unqLegHands = legendUnq(h, sortType)
 % unqLegHands = legendUnq(h, sortType)
 %   Run this function just before running 'legend()' to avoid representing duplicate or missing

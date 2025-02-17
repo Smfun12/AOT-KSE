@@ -1,5 +1,5 @@
 function KSE_inter()
-clear; clc; close all;
+clc; close all;
 addpath("utils/");
 addpath("default_config/");
 addpath("plotting/");
@@ -13,6 +13,22 @@ addpath("plotting/");
 
 
 p = initDefaultEnv();
+
+f = sin(p.x);
+
+grid_factor = 2;
+grid_spacing = p.x(1:grid_factor:p.N);
+
+h = diff(grid_spacing);
+h = [h, h(end)];
+F = griddedInterpolant(grid_spacing, f(1:grid_factor:p.N));
+f_int = F(p.x);
+lhs = norm(f - f_int).^2;
+rhs = h.^2 * norm(gradient(f)).^2;
+
+lhs/rhs(1)
+
+
 vars = DataAssimilationVariables_KSE(p);
 p.size_vars = length(vars);
 

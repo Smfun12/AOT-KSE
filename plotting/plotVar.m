@@ -45,9 +45,9 @@ function [var] = plotVar(var, p, u_hat)
     if var.off_grid 
         
         if contains(var.observer_type, "Target")
-            % scatter(var.sensors, .5+zeros(1, length(var.sensors)), sensor_size, 'blue', 'filled', "DisplayName", var.observer_type + "(#sensors=" + length(var.sensors) + ", frequency=" + var.targets_frequency + ")")
-            scatter(p.x(1:10:p.N), zeros(length(p.x(1:10:p.N))), 100, 'blue', 'filled', "DisplayName", "Uniform(103)")
-            scatter(var.target_sensors, .5+zeros(length(var.target_sensors)), sensor_size, "red", "filled", "DisplayName", "Target Locations" + "(#sensors=" + length(var.target_sensors) + ")")
+            scatter(var.sensors, .5+zeros(1, length(var.sensors)), sensor_size, 'blue', 'filled', "DisplayName", var.observer_type + "(#sensors=" + length(var.sensors) + ", frequency=" + var.targets_frequency + ")")
+            % scatter(p.x(1:10:p.N), zeros(length(p.x(1:10:p.N))), 100, 'blue', 'filled', "DisplayName", "Uniform(103)")
+            scatter(var.target_sensors, zeros(length(var.target_sensors)), sensor_size, "red", "filled", "DisplayName", "Target Locations" + "(#sensors=" + length(var.target_sensors) + ")")
             % scatter(var.target_sensors(1), .5, 100, "filled", "green")
             % scatter(p.Lx+var.target_sensors, .5+zeros(length(var.target_sensors)), sensor_size, "red", "filled", "DisplayName", "Target Locations" + "(#sensors=" + length(var.target_sensors) + ")")
             % scatter(p.Lx+var.target_sensors(1), .5, 100, "filled", "green")

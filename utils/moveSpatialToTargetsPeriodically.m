@@ -95,7 +95,7 @@ function [spatial_sensors, distanceSum] = moveSpatialToTargetsPeriodically(var, 
     points = var.sensors;
     mapping = var.mapping;
     % mean_flow = mean(abs(ref_solution));
-    mean_flow = 1.3;
+    mean_flow = 1.8;
     domain_length = p.Lx;
     distanceSum = 0;
     for i = 1:length(targets)
@@ -105,6 +105,7 @@ function [spatial_sensors, distanceSum] = moveSpatialToTargetsPeriodically(var, 
         % Compute distance to target
         % min_index = mapping(i);
         min_index = i;
+        % [~, min_index] = min(targets(i) - points);
         dist_to_target = targets(i) - points(min_index);
         
         % Account for periodic boundary conditions
@@ -130,5 +131,5 @@ function [spatial_sensors, distanceSum] = moveSpatialToTargetsPeriodically(var, 
             points(min_index) = points(min_index) + domain_length;
         end
     end
-    spatial_sensors = ((points));
+    spatial_sensors = points;
 end

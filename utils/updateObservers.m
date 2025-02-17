@@ -164,29 +164,34 @@ function [var] = updateObservers(var, p, u_hat, aot_sol)
             % 
             % K = rho + abs(gradient(ref_solution));
         case "Target-Sensors"
-    
-                
             aot_physic_sol = ifft(aot_sol, "symmetric");
-            u_x_star = abs(gradient(aot_physic_sol));
+            u_x_star = abs(gradient(ref_solution));
             [~, idx] = max(u_x_star);
             % idx = 1;
-            C = (4/3)^(3/4)* (var.nudg_parameter^5*var.c/var.my_k)^(-1/4);
-            h_hat = abs(real(C*(var.K-u_x_star).^(3/4)));
+            % var.K = findBigK(aot_sol,p,var);
+            var.K = 2;
+            % var.K = 5100;
+            % C = (4/3)^(3/4)* (var.nudg_parameter^5*var.c/var.my_k)^(-1/4);
+            % h_hat = abs(real(C*(var.K-u_x_star).^(3/4)));
             
+            bracket = (-4/3 * (2/var.nu - p.mu + u_x_star + var.K)).^(3/4);
+            constants = var.nu^(1/4) / (p.mu*var.c^(1/4));
+
+            h_hat = bracket * constants;
+
             % rho = 3/4*(var.nudg_parameter^4*var.c*h_hat.^4/var.nu).^(1/3);
             % bracket = 2/var.nu - var.nudg_parameter + u_x_star + rho;   
+            
             
             % Direction: 1 - left, 2 - right
             dir = 2;
             F_temp = griddedInterpolant(p.x, h_hat, 'linear');
-            tsize = length(var.target_sensors);
-            ssize = length(var.sensors);
+            
             if p.ti == 1 || mod(p.ti, var.targets_frequency) == 0
-            % if p.ti == 1 || var.change_triggered
-                var.change_triggered = false;
-            % if p.ti == 1 || var.distances(end) < p.dx
+            % if p.ti == 1 || norm(sort(var.target_sensors) - sort(var.sensors)) < length(var.sensors)*p.dx
                 var.target_sensors = p.x(idx);
-                [var.target_sensors, var] = getTargetSensors(F_temp, dir, var, p);
+                var.target_sensors = sort(getTargetSensors(var, h_hat, p));
+                % var.target_sensors = getSimpleTargetSensors(F_temp, dir, var, p);
                 var.number_target_sensors = [var.number_target_sensors, length(var.target_sensors)];
                 remaining_sensors = var.sensors;
 
@@ -214,45 +219,8 @@ function [var] = updateObservers(var, p, u_hat, aot_sol)
             
             aot_physic_sol = ifft(aot_sol, "symmetric");
             u_x_star = abs(gradient(aot_physic_sol));
-            [~, idx] = max(aot_physic_sol);
-            % idx = 1;
-            % idx = randperm(p.N, 1);
+            % [~, idx] = max(aot_physic_sol);
 
-            % [r,c] = size(p.var_Ks);
-            % if p.ti <= c
-            %     big_K = p.var_Ks(:, p.ti);
-            % else
-            %     big_K = p.var_Ks(:, end);
-            % end
-
-            C = (4/3)^(3/4)* (var.nudg_parameter^5*var.c/var.my_k)^(-1/4);
-            h_hat = abs(real(C*(var.K-u_x_star).^(3/4)));
-            
-            % rho = 3/4*(var.nudg_parameter^4*var.c*h_hat.^4/var.nu).^(1/3);
-            % bracket = 2/var.nu - var.nudg_parameter + u_x_star + rho; 
-            
-            % Direction: 1 - left, 2 - right
-            dir = 2;
-            F_temp = griddedInterpolant(p.x, h_hat, 'linear');
-            % F_temp = polyfit(p.x, h_hat, 6);
-          
-            if p.ti == 1 || mod(p.ti, var.targets_frequency) == 0
-                var.target_sensors = p.x(idx);
-                % [var] = getTargetSensors(h_hat, var, p);
-                var.target_sensors = getSimpleTargetSensors(F_temp, dir, var, p);
-                var.number_target_sensors = [var.number_target_sensors, length(var.target_sensors)];
-                % var.target_sensors = getTargetSensorsNearest(h_hat, dir, idx, p);
-            end
-          
-            var.sensors = var.target_sensors;
-            if p.ti == p.num_timesteps
-                disp("Average number of target sensors:" + mean(var.number_target_sensors))
-            end
-        case "Unphysical-Target-Sensors1"
-            
-            aot_physic_sol = ifft(aot_sol, "symmetric");
-            u_x_star = abs(gradient(aot_physic_sol));
-            % [~, idx] = max(u_x_star);
             idx = 1;
             % idx = randperm(p.N, 1);
 
@@ -262,10 +230,18 @@ function [var] = updateObservers(var, p, u_hat, aot_sol)
             % else
             %     big_K = p.var_Ks(:, end);
             % end
+            % var.K = findBigK(aot_sol,p,var);
+            var.K = 2;
 
-            C = (4/3)^(3/4)* (var.nudg_parameter^5*var.c/var.my_k)^(-1/4);
-            h_hat = abs(real(C*(var.K-u_x_star).^(3/4)));
-            
+            % C = (4/3)^(3/4)* (var.nudg_parameter^5*var.c/var.my_k)^(-1/4);
+            % h_hat = abs(real(C*(var.K-u_x_star).^(3/4)));
+            bracket = (-4/3 * (2/var.nu - p.mu + u_x_star + var.K)).^(3/4);
+            constants = var.nu^(1/4) / (p.mu*var.c^(1/4));
+
+            h_hat = bracket * constants;
+            % 
+            % figure(20);
+            % plot(p.x, h_hat)
             % rho = 3/4*(var.nudg_parameter^4*var.c*h_hat.^4/var.nu).^(1/3);
             % bracket = 2/var.nu - var.nudg_parameter + u_x_star + rho; 
             
@@ -276,34 +252,30 @@ function [var] = updateObservers(var, p, u_hat, aot_sol)
           
             if p.ti == 1 || mod(p.ti, var.targets_frequency) == 0
                 var.target_sensors = p.x(idx);
-                var.target_sensors = getSimpleTargetSensors(F_temp, dir, var, p);
+                var.target_sensors = getTargetSensors(var, h_hat, p);
+                % var.target_sensors = getSimpleTargetSensors(F_temp, dir, var, p);
                 var.number_target_sensors = [var.number_target_sensors, length(var.target_sensors)];
-                % var.target_sensors = getTargetSensorsNearest(h_hat, dir, idx, p);
             end
           
             var.sensors = var.target_sensors;
             if p.ti == p.num_timesteps
                 disp("Average number of target sensors:" + mean(var.number_target_sensors))
             end
-
-        case "Unphysical-Target-Sensorsr"
+        case "Unphysical-Target-Sensors2"
             
             aot_physic_sol = ifft(aot_sol, "symmetric");
             u_x_star = abs(gradient(aot_physic_sol));
-            % [~, idx] = max(u_x_star);
-            % idx = 1;
-            idx = randperm(p.N, 1);
 
-            % [r,c] = size(p.var_Ks);
-            % if p.ti <= c
-            %     big_K = p.var_Ks(:, p.ti);
-            % else
-            %     big_K = p.var_Ks(:, end);
-            % end
+            idx = 1;
+            var.K = 2;
 
-            C = (4/3)^(3/4)* (var.nudg_parameter^5*var.c/var.my_k)^(-1/4);
-            h_hat = abs(real(C*(var.K-u_x_star).^(3/4)));
-            
+            bracket = (-4/3 * (2/var.nu - p.mu + u_x_star + var.K)).^(3/4);
+            constants = var.nu^(1/4) / (p.mu*var.c^(1/4));
+
+            h_hat = bracket * constants;
+            % 
+            % figure(20);
+            % plot(p.x, h_hat)
             % rho = 3/4*(var.nudg_parameter^4*var.c*h_hat.^4/var.nu).^(1/3);
             % bracket = 2/var.nu - var.nudg_parameter + u_x_star + rho; 
             
@@ -314,16 +286,15 @@ function [var] = updateObservers(var, p, u_hat, aot_sol)
           
             if p.ti == 1 || mod(p.ti, var.targets_frequency) == 0
                 var.target_sensors = p.x(idx);
-                var.target_sensors = getSimpleTargetSensors(F_temp, dir, var, p);
+                var.target_sensors = getTargetSensors(var, h_hat, p);
+                % var.target_sensors = getSimpleTargetSensors(F_temp, dir, var, p);
                 var.number_target_sensors = [var.number_target_sensors, length(var.target_sensors)];
-                % var.target_sensors = getTargetSensorsNearest(h_hat, dir, idx, p);
             end
           
             var.sensors = var.target_sensors;
             if p.ti == p.num_timesteps
                 disp("Average number of target sensors:" + mean(var.number_target_sensors))
             end
-
         case "Target-Sensors-Random"
 
             if p.ti == 1 || mod(p.ti, var.targets_frequency) == 0
@@ -343,9 +314,10 @@ function [var] = updateObservers(var, p, u_hat, aot_sol)
     end
 end
 
-function [var] = getTargetSensors(h, var, p)
+
+function [sensors] = getTargetSensors(var, h, p)
 discrete_integral = p.dx*sum(1./h);
-Ntotal = length(var.sensors);
+Ntotal = var.num_sensors;
 kappa = Ntotal / discrete_integral;
 fullGrid = SubDomain(1,p.N, [], Ntotal, discrete_integral, kappa, []);
 grid_to_idx = dictionary;
@@ -355,20 +327,22 @@ idx_to_subdomain(1) = fullGrid;
 p.idx_to_grid = idx_to_subdomain;
 p.grid_to_idx = grid_to_idx;
 subdomains = [fullGrid];
-[~, final_subDomains] = placeSensorsInSubDomains(fullGrid, 1./h, var, p, subdomains, []);
+% [~, final_subDomains] = placeSensorsInSubDomains(fullGrid, 1./h, p, subdomains, []);
+[~, final_subDomains] = placeSensorsInPrioritySubDomains(fullGrid, 1./h, p, subdomains, []);
+
 [final_subDomains] = placeRemainingSensors(final_subDomains, Ntotal - length(final_subDomains), p); 
-var.target_sensors = convertSubgridsToTargetCoordinates(final_subDomains);
-% var = plot_subgrids(final_subDomains, p, var);
+sensors = convertSubgridsToTargetCoordinates(final_subDomains);
+% plot_subgrids(final_subDomains, p);
 end
 
 
 function [domains] = placeRemainingSensors(domains, remaining_sensors, p)
 
-    currIdx = 1;
+    currIdx = 0;
     while remaining_sensors > 0
-        currSubDomain = domains(currIdx);
+        currSubDomain = domains(mod(currIdx, length(domains))+1);
         [r,~] = size(currSubDomain.sensors);
-        domains(currIdx).sensors = placeSensorsUniformly(currSubDomain, r+1, p);
+        domains(mod(currIdx, length(domains))+1).sensors = placeSensorsUniformly(currSubDomain, r+1, p);
         currIdx = currIdx + 1;
         remaining_sensors = remaining_sensors -1;
 
@@ -387,17 +361,19 @@ function [target_coordinates] = convertSubgridsToTargetCoordinates(subgrids)
     end
 end
 
-function [subdomains, finalSubDomains] = placeSensorsInSubDomains(subdomain, h, var, p, subdomains, finalSubDomains)
+function [subdomains, finalSubDomains] = placeSensorsInSubDomains(subdomain, h, p, subdomains, finalSubDomains)
     temp_list = [];
     n = subdomain.nsensors;
-    xmin = subdomain.xmin;
-    xmax = floor((subdomain.xmax+subdomain.xmin)/2);
+    % xmin = subdomain.xmin;
+    % xmax = floor((subdomain.xmax+subdomain.xmin)/2);
+    xmin = ceil((subdomain.xmax+subdomain.xmin)/2);
+    xmax = subdomain.xmax;
     h_values = h(xmin:xmax);
     curr_integral = p.dx * sum(h_values(:));
     n1 = subdomain.kappa*p.dx * sum(h_values(:));
-    
+    % disp(xmin + "," + xmax)
     subDom = SubDomain(xmin, xmax, [], n1, curr_integral, subdomain.kappa, []);
-    if n1 >= .5
+    if n1 >= .5 && xmin~= xmax
         subdomains = [subdomains, subDom];
         temp_list = [temp_list, subDom];
         p.idx_to_grid(length(p.idx_to_grid)+1) = subDom;
@@ -405,14 +381,16 @@ function [subdomains, finalSubDomains] = placeSensorsInSubDomains(subdomain, h, 
         n = n - 1;
     end
 
-    xmin = floor((subdomain.xmax+subdomain.xmin)/2);
-    xmax = subdomain.xmax;
+    % xmin = ceil((subdomain.xmax+subdomain.xmin)/2);
+    % xmax = subdomain.xmax;
+    xmin = subdomain.xmin;
+    xmax = floor((subdomain.xmax+subdomain.xmin)/2);
     h_values = h(xmin:xmax);
     curr_integral = p.dx * sum(h_values(:));
     n2 = subdomain.kappa*p.dx * sum(h_values(:));
     
     subDom = SubDomain(xmin, xmax, [], n2, curr_integral, subdomain.kappa, []);
-    if n2 >= .5 && n >= 1
+    if n2 >= .5 && n >= 1 && xmin~=xmax
         subdomains = [subdomains, subDom];
         temp_list = [temp_list, subDom];
         p.idx_to_grid(length(p.idx_to_grid)+1) = subDom;
@@ -423,23 +401,44 @@ function [subdomains, finalSubDomains] = placeSensorsInSubDomains(subdomain, h, 
         grid_idx = p.grid_to_idx(subdomain);
         subdomain.final_box= true;
         subdomain.sensors =  (p.x(subdomain.xmin)+p.x(subdomain.xmax))/2;
-        % subdomain.sensors =  p.x(subdomain.xmax);
-        % subdomain.sensors =  p.x(subdomain.xmin);
         subdomains(grid_idx) = subdomain;
         finalSubDomains = [finalSubDomains, subdomain];
     end
 
     for i=1:length(temp_list)
         subdomain_i = temp_list(i);
-        [subdomains, finalSubDomains] = placeSensorsInSubDomains(subdomain_i, h, var, p, subdomains,finalSubDomains); 
+        [subdomains, finalSubDomains] = placeSensorsInSubDomains(subdomain_i, h, p, subdomains,finalSubDomains); 
     end
+
+end
+
+function plot_subgrids(subgrids, p)
+
+    figure(10);
+    
+    colors = jet(length(subgrids));
+    
+    hold on
+
+    for i=1:length(subgrids)
+    
+        xmin = subgrids(i).xmin;
+        xmax = subgrids(i).xmax;
+        plotted_region = p.x(xmin:xmax);
+        y = linspace(0, 1, 100);
+        [X, Y] = meshgrid(plotted_region, y);
+        plot(X,Y , '.', 'Color', colors(i, :), 'MarkerSize', 10);
+        xlabel("X")
+        ylabel("Y")
+    end
+    hold off;
 
 end
 
 function [spatial_sensors] = getSimpleTargetSensors(F_temp, dir, var, p)
     spatial_sensors = var.target_sensors;
     while true
-        % if length(spatial_sensors) == 103
+        % if length(spatial_sensors) == 53
         %     break;
         % end
         % Get location for next sensor h^(i)
@@ -477,33 +476,104 @@ function [h] = sensorsToH(sensors, p)
     h(1:length(sensors)-1) = diff(sensors);
 end
 
-function [var] = plot_subgrids(subgrids, p, var)
 
-    fig = figure(10);
-    
-    colors = jet(length(subgrids));
-    
-    
-    % plot(X, Y, 'k.', 'MarkerSize', 1);
-    hold on
+function [K] = findBigK(aot_sol, p, var)
+    l = 0;
+    h = 1e5;
+    while true
+        K = (l + h) / 2;
+        aot_physic_sol = ifft(aot_sol, "symmetric");
+        u_x_star = abs(gradient(aot_physic_sol));
+        % [~, idx] = max(aot_physic_sol);
+        idx = 1;
+        % idx = randperm(p.N, 1);
+        
+        
+        % C = (4/3)^(3/4)* (var.nudg_parameter^5*var.c/var.my_k)^(-1/4);
+        % h_hat = abs(real(C*(K-u_x_star).^(3/4)));
+        % rho = 3/4*(var.nudg_parameter^4*var.c*h_hat.^4/var.nu).^(1/3);
+        % bracket = 2/var.nu - var.nudg_parameter + u_x_star + rho; 
+        % K = 20;
+        bracket = (-4/3 * (2/var.nu - p.mu + u_x_star + K)).^(3/4);
+        constants = var.nu^(1/4) / (p.mu*var.c^(1/4));
 
-    for i=1:length(subgrids)
-    
-        xmin = subgrids(i).xmin;
-        xmax = subgrids(i).xmax;
-        plotted_region = p.x(xmin:xmax);
-        y = linspace(0, 1, 100);
-        [X, Y] = meshgrid(plotted_region, y);
-        plot(X,Y , '.', 'Color', colors(i, :), 'MarkerSize', 10);
-        title(sprintf('Reference solution at t = %1.2f',p.t(p.ti)));
-        xlabel("X")
-        ylabel("Y")
-        % xx = [plotted_region(1), plotted_region(1), plotted_region(end), plotted_region(end)];
-        % yy = [0, 1, 0, 1];
-        % line(xx, yy, "LineWidth", 3);
+        h_hat = bracket * constants;
+        n_sensors = round(sum(1./h_hat)*p.dx);
+        % dir = 2;
+        % F_temp = griddedInterpolant(p.x, h_hat, 'linear');
+        % var.target_sensors = p.x(idx);
+        % sensors = getSimpleTargetSensors(F_temp, dir, var, p);
+        if ~isreal(n_sensors)
+            h = K;
+            continue;
+        end
+        if n_sensors > var.num_sensors
+            h = K;
+        elseif n_sensors < var.num_sensors
+            l = K;
+        elseif n_sensors == var.num_sensors
+            var.target_sensors = sensors;
+            break;
+        end
     end
-    hold off
-    % frame = getframe(fig);
-    % var.im{p.ti} = frame2im(frame);
+end
+
+function [subdomains, finalSubDomains] = placeSensorsInPrioritySubDomains(subdomain, h, p, subdomains, finalSubDomains)
+    temp_list = [];
+    n = subdomain.nsensors;
+    xmin = subdomain.xmin;
+    xmax = floor((subdomain.xmax+subdomain.xmin)/2);
+    h_values = h(xmin:xmax);
+    curr_integral = p.dx * sum(h_values(:));
+    n1 = subdomain.kappa*p.dx * sum(h_values(:));
+    subDom = SubDomain(xmin, xmax, [], n1, curr_integral, subdomain.kappa, []);
+
+    xmin_2 = ceil((subdomain.xmax+subdomain.xmin)/2);
+    xmax_2 = subdomain.xmax;
+    h_values_2 = h(xmin_2:xmax_2);
+    curr_integral_2 = p.dx * sum(h_values_2(:));
+    n2 = subdomain.kappa*p.dx * sum(h_values_2(:));
+    subDom_2 = SubDomain(xmin_2, xmax_2, [], n2, curr_integral_2, subdomain.kappa, []);
+
+    if n1 >= .5 || n2>= .5 
+        if n1 > n2 && n1 >= .5
+            temp_list = [temp_list, subDom];
+            subdomains = [subdomains, subDom];
+            p.idx_to_grid(length(p.idx_to_grid)+1) = subDom;
+            p.grid_to_idx(subDom) = length(p.idx_to_grid)+1;
+            n = n - 1;
+            if n > 1
+                temp_list = [temp_list, subDom_2];
+                subdomains = [subdomains, subDom_2];
+                p.idx_to_grid(length(p.idx_to_grid)+1) = subDom_2;
+                p.grid_to_idx(subDom_2) = length(p.idx_to_grid)+1;
+            end
+        elseif n2 >=.5
+            temp_list = [temp_list, subDom_2];
+            subdomains = [subdomains, subDom_2];
+            p.idx_to_grid(length(p.idx_to_grid)+1) = subDom_2;
+            p.grid_to_idx(subDom_2) = length(p.idx_to_grid)+1;
+            n = n - 1;
+            if n > 1
+                temp_list = [temp_list, subDom];
+                subdomains = [subdomains, subDom];
+                p.idx_to_grid(length(p.idx_to_grid)+1) = subDom;
+                p.grid_to_idx(subDom) = length(p.idx_to_grid)+1;
+            end
+        end
+    end
+    
+    if isempty(temp_list)
+        grid_idx = p.grid_to_idx(subdomain);
+        subdomain.final_box= true;
+        subdomain.sensors =  (p.x(subdomain.xmin)+p.x(subdomain.xmax))/2;
+        subdomains(grid_idx) = subdomain;
+        finalSubDomains = [finalSubDomains, subdomain];
+    end
+
+    for i=1:length(temp_list)
+        subdomain_i = temp_list(i);
+        [subdomains, finalSubDomains] = placeSensorsInPrioritySubDomains(subdomain_i, h, p, subdomains,finalSubDomains); 
+    end
 
 end

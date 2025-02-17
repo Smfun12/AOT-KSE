@@ -6,6 +6,12 @@ function plotFinalErrorForVars(vars, p)
             legends = [legends, vars(i).observer_type+ "(#sensors="+ length(vars(i).sensors) + ", a=" + vars(i).amplitude + ")"];
         elseif contains(vars(i).observer_type, "Target")
             legends = [legends, vars(i).observer_type+ "("+ length(vars(i).sensors) + ", " + "frequency=" + vars(i).targets_frequency  + ",interpolation=" + vars(i).interpolation_type + ")"];
+            % hold on
+            % m = -20; % slope
+            % x1 = 0;
+            % y1 = 1;
+            % y = m*(p.x - x1) + y1;
+            % semilogy(p.x, y, "LineWidth", 2, "Color", "red")
         else
             legends = [legends, vars(i).observer_type+ "("+ length(vars(i).sensors) + ", " + "offgrid=" + vars(i).off_grid  + ",interpolation=" + vars(i).interpolation_type + ")"];
         end

@@ -5,13 +5,8 @@ function plotFinalErrorForVars(vars, p)
         if contains(vars(i).observer_type, "Lagrangian")
             legends = [legends, vars(i).observer_type+ "(#sensors="+ length(vars(i).sensors) + ", a=" + vars(i).amplitude + ")"];
         elseif contains(vars(i).observer_type, "Target")
-            legends = [legends, vars(i).observer_type+ "("+ length(vars(i).sensors) + ", " + "frequency=" + vars(i).targets_frequency  + ",interpolation=" + vars(i).interpolation_type + ")"];
-            % hold on
-            % m = -20; % slope
-            % x1 = 0;
-            % y1 = 1;
-            % y = m*(p.x - x1) + y1;
-            % semilogy(p.x, y, "LineWidth", 2, "Color", "red")
+            legends = [legends, vars(i).observer_type+ "("+ length(vars(i).sensors) + ", " + "frequency=" + vars(i).targets_frequency  + ",interpolation=" + vars(i).interpolation_type + ", K=-" + vars(i).K + ")"];
+            
         else
             legends = [legends, vars(i).observer_type+ "("+ length(vars(i).sensors) + ", " + "offgrid=" + vars(i).off_grid  + ",interpolation=" + vars(i).interpolation_type + ")"];
         end
@@ -20,6 +15,13 @@ function plotFinalErrorForVars(vars, p)
         end
         time_axis = p.dt:p.dt:p.dt*length(vars(i).error_aot);
         semilogy(time_axis(1:100:length(vars(i).error_aot)), vars(i).error_aot(1:100:length(vars(i).error_aot)), vars(i).marker, 'LineWidth',3);
+        if (contains(vars(i).observer_type, "Target"))
+            err = vars(i).error_aot(1)*exp(-vars(i).K*p.t);
+            err(err < 10e-16) = 10e-16;
+            hold on
+            semilogy(p.t, err, "LineWidth", 3, "Color", "red", "Marker","square");
+            legends = [legends, "Desired rate: error = e^{-" + vars(i).K + "*t}"];
+        end
         hold off;
         % title("Error computed over time");
         if p.prod
@@ -50,7 +52,7 @@ function plotFinalErrorForVars(vars, p)
         end
         xlabel("Time, $t$", Interpreter="latex", FontSize=36)
         ylabel("AOT error, $\epsilon$ ,Interpolation error", "Interpreter","latex", "FontSize",36)
-        legend(legends)
+        legend(legends, 'Interpreter','latex')
         set(gca, "FontSize", 26)
     end
     

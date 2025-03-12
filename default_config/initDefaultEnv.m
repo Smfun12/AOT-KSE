@@ -3,7 +3,7 @@ function [p] = initDefaultEnv()
     p.Lx = 32*pi;
     p.dx = p.Lx/p.N;
     p.x = 0:p.dx:p.Lx -p.dx;
-    p.T = 100;
+    p.T = 5000;
     p.dt = 0.01;
     p.show = 1e7;
     p.constant = .5*p.Lx/pi;
@@ -25,5 +25,5 @@ function [p] = initDefaultEnv()
     p.plot_var = true;
     p.stop_when_reached_machine_precision = false;
     p.show_interpolation_error = false;
-    p.prod = false;
+    p.prod = true;
 end

@@ -35,13 +35,14 @@ function [var] = plotVar(var, p, u_hat)
     end
 
     ref_solution = ifft(u_hat,'symmetric');
-    plot(p.x, ref_solution, "LineWidth",2, "DisplayName", "Ground-truth solution");
+    plot(p.x, ref_solution, "LineWidth",3);
     hold on;
     % plot(p.Lx+p.x, ref_solution, "LineWidth",2, "DisplayName", "Ground-truth solution");
     % aot_obs = interpolate_observations(p, ref_solution, p.x(var.sensors), var);
     % plot(p.x, aot_obs, "LineWidth",2, "Color", [0.9290 0.6940 0.1250], "Marker","x", "DisplayName", "Intepolated solution");
 
-    sensor_size = 100;
+    sensor_size = 300;
+    F_temp = griddedInterpolant(p.x, ref_solution);
     if var.off_grid 
         
         if contains(var.observer_type, "Target")
@@ -55,7 +56,8 @@ function [var] = plotVar(var, p, u_hat)
             legend;
             % legend(["", var.observer_type + "(#sensors=" + length(var.sensors) + ")", "Target locations"])
         else
-            scatter(var.sensors, zeros(length(var.sensors)), sensor_size, 'r', 'filled', "DisplayName", var.observer_type + "(#sensors=" + length(var.sensors) + ", amplitude=" + var.amplitude + "%)")
+            
+            scatter(var.sensors, F_temp(var.sensors), sensor_size, 'r', 'filled', "DisplayName", var.observer_type + "(#sensors=" + length(var.sensors) + ", amplitude=" + var.amplitude + "%)")
             legendUnq();
             legend;
         end
@@ -68,16 +70,20 @@ function [var] = plotVar(var, p, u_hat)
             legend;
             % legend(["", var.observer_type + "(#sensors=" + length(var.sensors) + ")", "Target locations"])
         else
-            scatter(p.x(var.sensors), zeros(length(var.sensors)), 'r', 'filled')
+            scatter(var.sensors, F_temp(var.sensors), sensor_size, 'r', 'filled', "DisplayName", var.observer_type + "(#sensors=" + length(var.sensors) + ")")
+            legendUnq();
+            legend;
         end
         
     end
     
     
     hold off;
-    title(sprintf('Reference solution at t = %1.2f',p.t(p.ti)));
+    xlabel("X")
+    ylabel("$u(x, t)$", Interpreter="latex")
+    % title(sprintf('Reference solution at t = %1.2f',p.t(p.ti)));
     axis([0, p.Lx, -3,3]);
-    fontsize(var.sens_fig, 26, "points")
+    fontsize(var.sens_fig, 48, "points")
     if contains(var.observer_type, "Lagrangian")
         legend(["", var.observer_type + "(#sensors=" + length(var.sensors) + ", a=" + var.amplitude + ")"])
     end

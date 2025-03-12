@@ -153,8 +153,8 @@ function [var] = updateObservers(var, p, u_hat, aot_sol)
                 var.temp_basis = [];
             end
         case "Random"
-            if p.ti == 1 || mod(p.ti, 250) == 0
-                var.sensors = sort(unique(randi([1, p.N], 1,34)));
+            if p.ti == 1 || mod(p.ti, 100) == 0
+                var.sensors = sort(randperm(p.N, var.num_sensors));
             end
             % [h_hat] = sensorsToH(p.x(var.sensors), p);
             % small_k = 0.8;
@@ -165,11 +165,11 @@ function [var] = updateObservers(var, p, u_hat, aot_sol)
             % K = rho + abs(gradient(ref_solution));
         case "Target-Sensors"
             aot_physic_sol = ifft(aot_sol, "symmetric");
-            u_x_star = abs(gradient(ref_solution));
+            u_x_star = abs(gradient(aot_physic_sol));
             [~, idx] = max(u_x_star);
             % idx = 1;
             % var.K = findBigK(aot_sol,p,var);
-            var.K = 20;
+            var.K = 0;
             % var.K = 5100;
             % C = (4/3)^(3/4)* (var.nudg_parameter^5*var.c/var.my_k)^(-1/4);
             % h_hat = abs(real(C*(var.K-u_x_star).^(3/4)));
@@ -177,26 +177,39 @@ function [var] = updateObservers(var, p, u_hat, aot_sol)
             
             % h = [h, h(end)];
             
-            
-            
-            bracket = (-4/3 * (2/var.nu - p.mu + u_x_star + var.K)).^(3/4);
+            % h_hat = diff(p.x(1:32:p.N));
+            % f = sin(p.x);
+            % h = max(h_hat);
+            % F_temp = griddedInterpolant(p.x, f);
+            % F = griddedInterpolant(var.sensors, F_temp(var.sensors));
+            % f_int = F(p.x);
+            % lhs = norm(f - f_int).^2;
+            % rhs = h.^2 * norm(gradient(f)).^2;
+            % var.c = lhs/rhs;
+
+            bracket = (-4/3 * (2/var.nu - p.mu + u_x_star+var.K)).^(3/4);
             constants = var.nu^(1/4) / (p.mu*var.c^(1/4));
 
             h_hat = bracket * constants;
             
            
-           
-            % rho = 3/4*(var.nudg_parameter^4*var.c*h_hat.^4/var.nu).^(1/3);
-            % bracket = 2/var.nu - var.nudg_parameter + u_x_star + rho;   
-            
+            % a= p.dx*p.N;
+            % b = 1./(bracket * constants);
+            % a*b;
+            % 
+            % h_hat = diff(p.x(1:32:p.N));
+            % h_hat = [h_hat, h_hat(end)];
+            rho = 3/4*(var.nudg_parameter^4*var.c*h_hat.^4/var.nu).^(1/3);
+            final_bracket = 2/var.nu - var.nudg_parameter + u_x_star + rho;   
+            % max(final_bracket)
+            % nsensors = sum(1./h_hat)*p.dx
             
             % Direction: 1 - left, 2 - right
-            dir = 2;
-            F_temp = griddedInterpolant(p.x, h_hat, 'linear');
+            % dir = 2;
+            % F_temp = griddedInterpolant(p.x, h_hat, 'linear');
             
             if p.ti == 1 || mod(p.ti, var.targets_frequency) == 0
             % if p.ti == 1 || p.ti == 2 || var.error_aot(p.ti-1) >= var.error_aot(p.ti-2)
-            % if p.ti == 1 || norm(sort(var.target_sensors) - sort(var.sensors)) < length(var.sensors)*p.dx
                 var.target_sensors = p.x(idx);
                 var.target_sensors = sort(getTargetSensors(var, h_hat, p));
                 % var.target_sensors = getSimpleTargetSensors(F_temp, dir, var, p);
@@ -219,13 +232,13 @@ function [var] = updateObservers(var, p, u_hat, aot_sol)
             
             var.sensors = spatial_sensors;
 
-            f = sin(p.x);
-            h = max(h_hat);
-            F_temp = griddedInterpolant(p.x, f);
-            F = griddedInterpolant(var.sensors, F_temp(var.sensors));
-            f_int = F(p.x);
-            lhs = norm(f - f_int).^2;
-            rhs = h.^2 * norm(gradient(f)).^2;
+            % f = sin(p.x);
+            % h = max(h_hat);
+            % F_temp = griddedInterpolant(p.x, f);
+            % F = griddedInterpolant(var.sensors, F_temp(var.sensors));
+            % f_int = F(p.x);
+            % lhs = norm(f - f_int).^2;
+            % rhs = h.^2 * norm(gradient(f)).^2;
             % var.c = lhs/rhs;
             % var.distances = [var.distances, norm(distanceSum)/length(var.sensors)];
             if p.ti == p.num_timesteps
@@ -248,27 +261,27 @@ function [var] = updateObservers(var, p, u_hat, aot_sol)
             %     big_K = p.var_Ks(:, end);
             % end
             % var.K = findBigK(aot_sol,p,var);
-            var.K = .2;
+            var.K = 0;
 
             % C = (4/3)^(3/4)* (var.nudg_parameter^5*var.c/var.my_k)^(-1/4);
             % h_hat = abs(real(C*(var.K-u_x_star).^(3/4)));
-            bracket = (-4/3 * (2/var.nu - p.mu + u_x_star + var.K)).^(3/4);
+            bracket = (-4/3 * (2/var.nu - p.mu + u_x_star+var.K)).^(3/4);
             constants = var.nu^(1/4) / (p.mu*var.c^(1/4));
 
             h_hat = bracket * constants;
             % 
             % figure(20);
             % plot(p.x, h_hat)
-            % rho = 3/4*(var.nudg_parameter^4*var.c*h_hat.^4/var.nu).^(1/3);
-            % bracket = 2/var.nu - var.nudg_parameter + u_x_star + rho; 
+            rho = 3/4*(var.nudg_parameter^4*var.c*h_hat.^4/var.nu).^(1/3);
+            final_bracket = 2/var.nu - var.nudg_parameter + u_x_star + rho; 
             
             % Direction: 1 - left, 2 - right
-            dir = 2;
-            F_temp = griddedInterpolant(p.x, h_hat, 'linear');
+            % dir = 2;
+            % F_temp = griddedInterpolant(p.x, h_hat, 'linear');
             % F_temp = polyfit(p.x, h_hat, 6);
-          
-            % if p.ti == 1 || mod(p.ti, var.targets_frequency) == 0
-            if p.ti <= 2 || var.error_aot(p.ti-1) >= var.error_aot(p.ti-2)
+
+            if p.ti == 1 || mod(p.ti, var.targets_frequency) == 0
+            % if p.ti <= 2 || var.error_aot(p.ti-1) >= var.error_aot(p.ti-2)
                 var.target_sensors = p.x(idx);
                 var.target_sensors = sort(getTargetSensors(var, h_hat, p));
                 % var.target_sensors = getSimpleTargetSensors(F_temp, dir, var, p);
@@ -276,13 +289,13 @@ function [var] = updateObservers(var, p, u_hat, aot_sol)
             end
           
             var.sensors = var.target_sensors;
-            f = sin(p.x);
-            h = max(h_hat);
-            F_temp = griddedInterpolant(p.x, f);
-            F = griddedInterpolant(var.sensors, F_temp(var.sensors));
-            f_int = F(p.x);
-            lhs = norm(f - f_int).^2;
-            rhs = h.^2 * norm(gradient(f)).^2;
+            % f = sin(p.x);
+            % h = max(h_hat);
+            % F_temp = griddedInterpolant(p.x, f);
+            % F = griddedInterpolant(var.sensors, F_temp(var.sensors));
+            % f_int = F(p.x);
+            % lhs = norm(f - f_int).^2;
+            % rhs = h.^2 * norm(gradient(f)).^2;
             % var.c = lhs/rhs;
             if p.ti == p.num_timesteps
                 disp("Average number of target sensors:" + mean(var.number_target_sensors))
@@ -310,8 +323,8 @@ function [var] = updateObservers(var, p, u_hat, aot_sol)
             F_temp = griddedInterpolant(p.x, h_hat, 'linear');
             % F_temp = polyfit(p.x, h_hat, 6);
           
-            % if p.ti <= 2 || mod(p.ti, var.targets_frequency) == 0
-            if p.ti <= 2 || var.error_aot(p.ti-1) >= var.error_aot(p.ti-2)
+            if p.ti <= 2 || mod(p.ti, var.targets_frequency) == 0
+            % if p.ti <= 2 || var.error_aot(p.ti-1) >= var.error_aot(p.ti-2)
                 var.target_sensors = p.x(idx);
                 var.target_sensors = getTargetSensors(var, h_hat, p);
                 % var.target_sensors = getSimpleTargetSensors(F_temp, dir, var, p);
@@ -562,7 +575,7 @@ function [subdomains, finalSubDomains] = placeSensorsInPrioritySubDomains(subdom
     n2 = subdomain.kappa*p.dx * sum(h_values_2(:));
     subDom_2 = SubDomain(xmin_2, xmax_2, [], n2, curr_integral_2, subdomain.kappa, []);
 
-    if n1 >= .5 || n2>= .5 
+    if (n1 >= .5 || n2>= .5 ) && length(subdomains) < p.N
         if n1 > n2 && n1 >= .5
             temp_list = [temp_list, subDom];
             subdomains = [subdomains, subDom];

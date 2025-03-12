@@ -70,6 +70,19 @@ for ti = 1:p.num_timesteps
 
 end
 
+% errors = [] ;
+% try
+%     err = load("err.mat");
+%     errors = err.errors;
+% catch ME
+%     errors = [];
+%     save("err.mat", "errors")
+%     err = load("err.mat");
+%     errors = err.errors;
+% end
+% 
+% errors = [errors; vars(2).error_aot];
+% save("err.mat", "errors")
 vars(1).error
 u_c = computeL2NormVelocity(p.soln_history);
 % figure;

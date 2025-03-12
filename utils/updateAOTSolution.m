@@ -27,6 +27,7 @@ function [var] = updateAOTSolution(var, p, u_hat, u_hat_old)
     nonlin_aot = (1i*p.k/2).*fft(real(ifft(var.aot_hat.*p.dealias_mask)).^2);
 
     var.aot_hat = p.E.*(var.aot_hat - p.dt*nonlin_aot + p.dt*p.mu*(Ihumv));
+    
     var.error_aot(p.ti) = norm(abs(u_hat - var.aot_hat),'fro')/p.N;
     var.error = var.error_aot(p.ti);
 end

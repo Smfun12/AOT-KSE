@@ -1,6 +1,11 @@
 data/
 gif/
-*.gif
+**/*.gif
+**/*.jpg
+**/*.png
+**/*.pdf
+**/*.fig
+*.mp4
 *.mat
 **/*.asv
 *.asv

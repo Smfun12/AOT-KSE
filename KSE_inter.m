@@ -1,5 +1,7 @@
 function KSE_inter()
-clc; close all;
+% for iter=1:10
+% clear; clc; close all;
+close all;
 addpath("utils/");
 addpath("default_config/");
 addpath("plotting/");
@@ -18,6 +20,7 @@ vars = DataAssimilationVariables_KSE(p);
 p.size_vars = length(vars);
 
 u_0 = cos(p.x/p.constant).*(1+sin(p.x/p.constant));
+% u_0 = cos(p.x/p.constant).*(1+cos(p.x/p.constant));
 u_hat = fft(u_0);
 p.soln_history(:,1) = u_0;
 
@@ -29,6 +32,7 @@ idx = round(p.N/2);
 point_velocity = [u_0(idx)];
 sample_frequency = 1;
 
+finished_indices = [];
 for ti = 1:p.num_timesteps
     u_hat_old = u_hat;
     % p.L.info("KSE Main", "Iteration: " + ti + "/" + p.num_timesteps)
@@ -36,6 +40,7 @@ for ti = 1:p.num_timesteps
 
     nonlin_term = (1i*p.k/2).*fft(real(ifft(u_hat.*p.dealias_mask)).^2);
     u_hat = p.E.*(u_hat - p.dt*nonlin_term);
+    % u_hat = u_hat_old;
     
     p.ti = ti;
     u_phys = real(ifft(u_hat,'symmetric'));
@@ -48,24 +53,26 @@ for ti = 1:p.num_timesteps
     
     error_counter = 0;
     for i=1:p.size_vars
-
-        if p.stop_when_reached_machine_precision && vars(i).error < 1e-15
-            error_counter = error_counter + 1;
-            vars(i).interpolation_error = [vars(i).interpolation_error, vars(i).interpolation_error(end)];
-            continue
+        if ismember(i, finished_indices)
+            % error_counter = error_counter + 1;
+            % continue
+        end
+        if (p.stop_when_reached_machine_precision) && (ti > 1 && vars(i).error_aot(ti-1) < 1e-14)
+            % error_counter = error_counter + 1;
+            % finished_indices = [finished_indices, i];
+            % continue
         end
         
         [var] = updateObservers(vars(i), p, u_hat, vars(i).aot_hat);
         [var] = updateAOTSolution(var, p, u_hat, u_hat_old);
-
-        if mod(ti,p.show)==0 && p.plot_var
-            [var] = plotVar(var,p, u_hat);
-        end
         vars(i) = var;
-
     end
+    if mod(ti,p.show)==0 && p.plot_var
+          p = plotVars(vars, p, u_hat);
+    end
+        
     if error_counter == p.size_vars
-        break
+        % break
     end
 
 end
@@ -81,23 +88,36 @@ end
 %     errors = err.errors;
 % end
 % 
-% errors = [errors; vars(2).error_aot];
+% errors = [errors; vars(1).error_aot];
 % save("err.mat", "errors")
-vars(1).error
-u_c = computeL2NormVelocity(p.soln_history);
-% figure;
+% lagrange_info = [vars(1).num_sensors, vars(i).amplitude];
+% save("lagrange_info", "lagrange_info")
+
+% save_vars = [];
+% 
+% for i=1:p.size_vars
+%     save_vars = [save_vars, vars(i)];
+% end
+
+timestamp = string(datetime('now', 'Format', 'yyyyMMdd_HHmmss'));
+filename = "vars" + timestamp + ".mat";
+
+save(filename, "vars")
+% vars(1).error
+% u_c = computeL2NormVelocity(p.soln_history, p);
+%a figure;
 % plot(1:p.num_timesteps, vars(1).difference, "LineWidth", 2)
 % xlabel("Time")
 % ylabel("Max over $|x_{t_k} - x_{{t+1}_k}|$", "Interpreter","latex")
 % fontsize(36, "points")
 
 % fourierAnalysis(point_velocity, p);
-plotFinalErrorForVars(vars, p)
+
 % plot_darkmode
 
 if p.plot_gif
     for i=1:p.size_vars
-        plotGif(vars(i), p)
+        plotGif(p)
     end
 end
 
@@ -106,8 +126,10 @@ if p.plot_kse_solution
     plotKSE(p)
 end
 
+plotFinalErrorForVars(vars, p)
+% end
 end
-function U_c = computeL2NormVelocity(velocityField)
+function U_c = computeL2NormVelocity(velocityField, p)
     % Computes the characteristic velocity as the L2 norm over space and time.
     %
     % Parameters:
@@ -120,18 +142,21 @@ function U_c = computeL2NormVelocity(velocityField)
     % U_c - The characteristic velocity (L2 norm)
 
     % Compute the squared magnitude of the velocity field
+    
+
     velocitySquared = velocityField.^2;
 
     % Integrate over space and time
-    spatialIntegral = sum(velocitySquared, [1]); % Sum over rows and columns
+    spatialIntegral = (sum(velocitySquared, [1])); % Sum over rows and columns
     totalIntegral = sum(spatialIntegral);             % Sum over time
 
     % Normalize by the total space and time
-    domainSize = numel(velocityField(:, 1)); % Total spatial size
-    totalTime = size(velocityField, 2);          % Total time duration
-
+    domainSize = numel(velocityField(:, 1)) * p.dx; % Total spatial size
+    totalTime = size(velocityField, 2) * p.dt;          % Total time duration
+ 
     % Compute the L2 norm
-    U_c = sqrt(totalIntegral / (domainSize * totalTime));
+    U_c = sqrt(totalIntegral * p.dx*p.dt / (domainSize * totalTime));
+
 end
 
 function fourierAnalysis(func, p)

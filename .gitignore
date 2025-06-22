@@ -1,4 +1,5 @@
 .DS_Store
+**/.DS_Store
 plots/*
 data/
 gif/

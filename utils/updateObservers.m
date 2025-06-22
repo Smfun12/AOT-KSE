@@ -1,6 +1,7 @@
     function [var] = updateObservers(var, p, u_hat, aot_sol)
     ref_solution = ifft(u_hat, 'symmetric');
     interpolant = griddedInterpolant(p.x, ref_solution, 'linear');
+    u0 = 1.3;
     switch var.observer_type
         case "Uniform"
             var.sensors = var.sensors;
@@ -9,8 +10,8 @@
     
             velocityInterp = @(pos) interpolant(pos);
             particleVelocities = velocityInterp(var.sensors);
-    
-            randomPerturbation = var.amplitude * (2 * rand(1, length(var.sensors)) - 1); % Uniform noise in [-strength, +strength]
+            
+            randomPerturbation = var.amplitude * 1.3 * (2 * rand(1, length(var.sensors)) - 1); % Uniform noise in [-strength, +strength]
             
             particlePositions = var.sensors + (particleVelocities + randomPerturbation) * p.dt;
             var.difference = [var.difference, max(abs(var.sensors - particlePositions))];
@@ -21,115 +22,175 @@
             velocityInterp = @(pos) interpolant(pos);
             particleVelocities = velocityInterp(var.sensors);
             t0 = var.rho*var.diameter^2 / (18*p.lambda);
-            
+            if ~isfield(var, "amplitude") || isempty(var.amplitude)
+                var.amplitude = 0;
+            end
+            randomPerturbation = var.amplitude * u0* (2 * rand(1, length(var.sensors)) - 1);
+
             u_new = var.vel+p.dt*1/t0*(particleVelocities-var.vel);
             var.vel = u_new;
-            particle_coord_x = p.dt*(u_new);
-            
-            u0 = 1.3;
+            particle_coord_x = p.dt*(u_new + randomPerturbation);
+           
             l0 = p.Lx;
             var.stokes_number = t0*u0/l0;
             
             var.sensors = var.sensors + particle_coord_x;
             var.sensors = mod(var.sensors, p.Lx);
 
-        case "Physical Target Sensors"
+        case "Target Sensors"
 
             aot_physic_sol = ifft(aot_sol, "symmetric");
             u_x_star = abs(gradient(aot_physic_sol));
-            % [~, idx] = max(u_x_star);
 
             p.ref_solution = aot_physic_sol;
             [var.K, h_hat] = determineH(p.mu, length(var.sensors), p, var.K);
 
             rho = 3/4*(var.nudg_parameter^4*var.c*h_hat.^4/var.nu).^(1/3);
-            final_bracket = 2/var.nu - var.nudg_parameter + u_x_star + rho;   
-            % max(final_bracket)
+            
             nsensors = sum(1./h_hat)*p.dx;
+            recent_errors = var.error_aot(max(1,p.ti-100):(p.ti-1));
+            std_recent = std(recent_errors);
+            mean_recent = mean(abs(recent_errors));
             
-            % Direction: 1 - left, 2 - right
-            % dir = 2;
-            % F_temp = griddedInterpolant(p.x, h_hat, 'linear');
+            if p.ti == 1 || (norm(var.target_sensors - var.sensors) < 1e-6)
+            % if p.ti == 1 || mod(p.ti, var.target_frequency) == 0
+            % if p.ti <= 2 || (var.error_aot(p.ti-1) >= var.error_aot(p.ti-2)
             
-            % if p.ti == 1 || mod(p.ti, var.targets_frequency) == 0
-            % if p.ti <= 2 || (var.error_aot(p.ti-1) >= var.error_aot(p.ti-2) && norm(sort(var.target_sensors) - sort(var.sensors)) < 1e-10)
-            if p.ti <= 2 || (var.error_aot(p.ti-1) >= var.error_aot(p.ti-2))
-                % var.target_sensors = getTargetSensors(var, h_hat, p);
                 if var.alg == 1
                     var.target_sensors = mesh_refine_greedy(h_hat, p.x(1), p.x(end), length(var.sensors), p.x, p.dx);
-                else
+                elseif var.alg == 2
                     var.target_sensors = getTargetSensors(var, h_hat, p);
-                end
-                % var.target_sensors = mesh_refine_greedy(h_hat, p.x(1), p.x(end), length(var.sensors), p.x, p.dx);
-                var.number_target_sensors = [var.number_target_sensors, length(var.target_sensors)];
-                remaining_sensors = var.sensors;
-
-                for i=1:length(var.target_sensors)
-                    distances = abs(var.target_sensors(i) - remaining_sensors);
-        
-                    [~, idx] = min(distances);
-
-                    var.mapping(i) = idx;
-
-                    remaining_sensors(idx) = 100*p.Lx;
+                else
+                    var.target_sensors = priority_adaptive_refinement(h_hat, p, var);
                 end
             end
 
             var.old_locations = var.sensors;
-            [spatial_sensors,~] = moveSpatialToTargetsPeriodically(var, p, ref_solution);
-            
+            % var = calculateMappingBetweenPhysicalAndTargetSensors(var, p);
+            % var = greedy_unique_periodic_match(var, p);
+            [spatial_sensors] = moveSpatialToTargetsPeriodically(var, p);
             var.sensors = spatial_sensors;
-            % var.sensors = var.target_sensors;
-
-            % f = sin(p.x);
-            % h = max(h_hat);
-            % F_temp = griddedInterpolant(p.x, f);
-            % F = griddedInterpolant(var.sensors, F_temp(var.sensors));
-            % f_int = F(p.x);
-            % lhs = norm(f - f_int).^2;
-            % rhs = h.^2 * norm(gradient(f)).^2;
-            % var.c = lhs/rhs;
-            % var.distances = [var.distances, norm(distanceSum)/length(var.sensors)];
-            if p.ti == p.num_timesteps
-                disp("Average number of target sensors:" + mean(var.number_target_sensors))
-            end
-
-         case "Nonphysical Target Sensors"
-            
-            aot_physic_sol = ifft(aot_sol, "symmetric");
-            u_x_star = abs(gradient(aot_physic_sol));
-            % [~, idx] = max(aot_physic_sol);
-            % idx = 1;
-
-            p.ref_solution = aot_physic_sol;
-
-            % var.K = 960;
-            [var.K, h_hat] = determineH(p.mu, length(var.sensors), p, var.K);
-
-            nsensors = sum(1./h_hat)*p.dx;
-            
-            rho = 3/4*(var.nudg_parameter^4*var.c*h_hat.^4/var.nu).^(1/3);
-            final_bracket = 2/var.nu - var.nudg_parameter + u_x_star + rho; 
-            
-            % if p.ti == 1 || mod(p.ti, var.targets_frequency) == 0
-            if p.ti <= 2 || var.error_aot(p.ti-1) >= var.error_aot(p.ti-2)
-                
-                
-                if var.alg == 1
-                    var.target_sensors = mesh_refine_greedy(h_hat, p.x(1), p.x(end), length(var.sensors), p.x, p.dx);
-                else
-                    var.target_sensors = getTargetSensors(var, h_hat, p);
-                end
-                var.number_target_sensors = [var.number_target_sensors, length(var.target_sensors)];
-            end
-            if ~isempty(var.target_sensors)
-                var.sensors = var.target_sensors;
-            end
-            if p.ti == p.num_timesteps
-                disp("Average number of target sensors:" + mean(var.number_target_sensors))
-            end
+        case "Forward Sensors"
+            var.sensors = var.sensors + p.dt*u0*var.sensor_speed;
+            var.sensors = sort(mod(var.sensors, p.Lx));
     end
 end
+
+function [var] = calculateMappingBetweenPhysicalAndTargetSensors(var, p)
+    mapping = zeros(size(var.target_sensors));
+    remainingPoints = var.sensors;
+    assigned = false(1, length(var.target_sensors));
+    for i = 1:length(var.target_sensors)
+        % Compute distances from array1(i, :) to all remaining points in array2
+        distances = abs(var.sensors - var.target_sensors(i));
+        distances = min(distances, p.Lx - distances);
+        
+        distances(assigned) = Inf;
+        % Find the closest point
+        [~, idx] = min(distances);
+
+        % Store the mapping
+        mapping(i) = idx;
+
+        % Remove the matched point from remainingPoints
+        % remainingPoints(idx) = [1e3];
+        assigned(idx) = true;
+    end
+    var.mapping = mapping;
+end
+
+function var = greedy_unique_periodic_match(var, p)
+    % A, B: 1D arrays of points in [0, L)
+    % L: length of periodic domain
+    % Output: indicesB(i) is index in B matched to A(i), uniquely
+    A = var.target_sensors;
+    B = var.sensors;
+    L = p.Lx;
+    nA = length(A);
+    nB = length(B);
+    assert(nA <= nB, 'Set B must have at least as many points as A.');
+
+    indicesB = zeros(size(A));       % Final output
+    assigned = false(1, nB);         % Keep track of assigned B points
+
+    for i = 1:nA
+        % Compute periodic distances from A(i) to all B
+        dists = abs(A(i) - B);
+        dists = min(dists, L - dists);
+
+        % Invalidate distances for already assigned points
+        dists(assigned) = Inf;
+
+        % Assign to closest unassigned point
+        [~, idx] = min(dists);
+        indicesB(i) = idx;
+        assigned(idx) = true;
+    end
+    var.mapping = indicesB;
+end
+
+
+function [sensor_positions] = priority_adaptive_refinement(h_func, p, var)
+% PRIORITY_ADAPTIVE_REFINEMENT: Adaptive splitting by sensor need
+% Inputs:
+%   h_func - density function
+%   a, b   - domain bounds
+%   N      - total number of sensors
+%   M      - resolution for numerical integration
+% Outputs:
+%   subdomains - final subdomain list
+%   sensor_positions - centers of final subdomains
+
+    % Initial domain
+    a = p.x(1);
+    b = p.x(end);
+    subdomains = [a, b];
+    N = var.num_sensors;
+    
+    h_total = trapz(p.x, h_func);
+    % Loop until all subdomains require ≤ 1 sensor
+    while length(subdomains) < N
+        needs_split = false;
+        new_subdomains = [];
+
+        % Compute sensor needs per subdomain
+        sensor_needs = zeros(size(subdomains,1),1);
+        for i = 1:size(subdomains,1)
+            x1 = subdomains(i,1);
+            x2 = subdomains(i,2);
+            % x_local = linspace(x1, x2, p.N);
+            % h_local = h_func(x_local);
+            % h_local = compute_weight(h, x1, x2, p.x);
+            integral_local = compute_weight(h_func, x1, x2, p.x);
+            sensor_needs(i) = N * integral_local / h_total;
+        end
+
+        % Find subdomain with max sensor need > 1
+        [max_need, idx_max] = max(sensor_needs);
+
+        if max_need <= 0.5
+            break;  % All subdomains done
+        else
+            needs_split = true;
+            % Split the max-need subdomain
+            x1 = subdomains(idx_max,1);
+            x2 = subdomains(idx_max,2);
+            xm = (x1 + x2)/2;
+
+            % Replace with two halves
+            new_subdomains = [subdomains(1:idx_max-1, :);
+                              x1, xm;
+                              xm, x2;
+                              subdomains(idx_max+1:end, :)];
+            subdomains = new_subdomains;
+        end
+    end
+
+    % Place sensors at subdomain centers
+    sensor_positions = mean(subdomains, 2);
+end
+
+
 
 function [mesh,segments]= mesh_refine_greedy(h_func, a, b, N, x, dx)
     % Start with one segment
@@ -179,7 +240,7 @@ function [K, h] = determineH(mu, N, p, initialK)
     c = 1/sqrt(12);
     u_x_star = abs(gradient(p.ref_solution));
     precision = 1000;
-    while number_of_generated_sensors ~= N
+    while abs(number_of_generated_sensors - N) > 1e-7
         
         old_K = K;
         if number_of_generated_sensors > N
@@ -204,7 +265,7 @@ function [K, h] = determineH(mu, N, p, initialK)
 
         h = bracket * constants;
         
-        number_of_generated_sensors = floor(sum(1./h)*p.dx);
+        number_of_generated_sensors = (sum(1./h)*p.dx);
         
     end
 end
@@ -223,6 +284,7 @@ p.h = 1./h;
 [final_subDomains] = splitFurtherIfRemainingSensors(final_subDomains, Ntotal - length(final_subDomains), p); 
 sensors = sort(unique(convertSubgridsToTargetCoordinates(final_subDomains)));
 end
+
 function [target_coordinates] = convertSubgridsToTargetCoordinates(subgrids)
     
     target_coordinates = [];
@@ -297,7 +359,7 @@ function [subdomains, finalSubDomains] = placeSensorsInPrioritySubDomainsLoop(su
 
         precision = .5;
 
-        if (n1 >= precision && n2 >= precision)
+        if (n1 >= precision || n2 >= precision)
             if n1 > n2 && xmin ~= xmax
                 temp_list = [temp_list, subDom];
                 % subdomains = [subdomains, subDom];

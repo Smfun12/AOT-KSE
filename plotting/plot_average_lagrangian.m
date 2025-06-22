@@ -24,9 +24,9 @@ h = plot(time_axis, exp(err_avg), "-o", 'LineWidth', 3, 'Color',"red");
 xlabel("Time, $t$", "Interpreter","latex")
 ylabel("AOT error, $\frac{1}{N} \|u-\hat{u}\|_F$","Interpreter","latex")
 % legend([ "Simulation 1", "Simulation 2", "Simulation 3" ,"Simulation 4" , "Simulation 5", "Average result"]);
-legend(h, {"Lagrangian(#sensors=" + lagrange_info(1) + ", a=" + lagrange_info(2) + ". Average result."})
+legend(h, {"Lagrangian. $N =$" + lagrange_info(1) + ", $c = $" + lagrange_info(2) + "$\times u^*$. Average result."}, "Interpreter","latex")
 set(gcf, 'Position', get(0, 'Screensize'));
 % l.String(1:end-1) = [];
-fontsize(72, "points")
+fontsize(48, "points")
 
 saveas(gcf, "plots/lagrangian/" + lagrange_info(1) + "_" + lagrange_info(2) + ".jpg")

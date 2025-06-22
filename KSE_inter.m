@@ -90,7 +90,7 @@ end
 % 
 % errors = [errors; vars(1).error_aot];
 % save("err.mat", "errors")
-% lagrange_info = [vars(1).num_sensors, vars(i).amplitude];
+% lagrange_info = [vars(1).num_sensors, vars(1).stokes_number, vars(1).amplitude];
 % save("lagrange_info", "lagrange_info")
 
 % save_vars = [];
@@ -99,10 +99,10 @@ end
 %     save_vars = [save_vars, vars(i)];
 % end
 
-timestamp = string(datetime('now', 'Format', 'yyyyMMdd_HHmmss'));
-filename = "vars" + timestamp + ".mat";
-
-save(filename, "vars")
+% timestamp = string(datetime('now', 'Format', 'yyyyMMdd_HHmmss'));
+% filename = "vars" + timestamp + ".mat";
+% 
+% save(filename, "vars")
 % vars(1).error
 % u_c = computeL2NormVelocity(p.soln_history, p);
 %a figure;
@@ -127,8 +127,8 @@ if p.plot_kse_solution
 end
 
 plotFinalErrorForVars(vars, p)
-% end
 end
+% end
 function U_c = computeL2NormVelocity(velocityField, p)
     % Computes the characteristic velocity as the L2 norm over space and time.
     %

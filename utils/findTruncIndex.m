@@ -1,5 +1,4 @@
-
-function [trunc_index] = findTruncIndex(p)
+function [p] = findTruncIndex(p)
     trunc_array = zeros(p.N,1);
     
     for i = 1:p.N
@@ -10,6 +9,7 @@ function [trunc_index] = findTruncIndex(p)
     end
     trunc_array(1) = 0;
     trunc_array(p.N/2+1) = 0;
-    trunc_index = find(trunc_array == 1);
+    p.trunc_index = find(trunc_array == 1);
+    p.trunc_index_comp = find(trunc_array == 0);
 end
 

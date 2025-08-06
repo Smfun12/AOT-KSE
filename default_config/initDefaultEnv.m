@@ -3,14 +3,14 @@ function [p] = initDefaultEnv()
     p.Lx = 32*pi;
     p.dx = p.Lx/p.N;
     p.x = 0:p.dx:p.Lx -p.dx;
-    p.T = 1000;
+    p.T = 400;
     p.dt = 0.01;
     p.show = 1e7;
     p.constant = .5*p.Lx/pi;
     p.observed_modes = 20;
     p.mu = 100;
     p.modes = 1:p.N/2;
-    p.lambda=1;
+    p.lambda = 1;
     p.k = [0:p.N/2-1 0 -p.N/2+1:-1]*(2*pi/p.Lx);
     p.E = exp(p.dt*(p.lambda*p.k.^2 - p.k.^4));
     p.dealias_mask = abs(p.k) <= floor((2/3)*p.N);
@@ -28,4 +28,5 @@ function [p] = initDefaultEnv()
     p.show_interpolation_error = false;
     p.prod = true;
     p.im = {};
+    p.print_iteration = 1e4;
 end

@@ -56,43 +56,46 @@ function [p] = plotVars(vars, p, u_hat)
     %     hold off
     % end
     ref_solution = ifft(u_hat,'symmetric');
-    % aot_solution = ifftn(vars(1).aot_hat, "symmetric");
     set(0, "CurrentFigure", figure(80));
     set(gcf, 'Position', get(0, 'Screensize'));
-    plot(p.x, (ref_solution ), "LineWidth",3);    
+    plot(p.x, (ref_solution ), "LineWidth", 6);    
     hold on;
     xlabel("$X$", "Interpreter","latex")
     ylabel("$u(x,t)$", Interpreter="latex")
     title(sprintf('$t$ = %1.2f',p.t(p.ti)), "Interpreter","latex");
     axis([0, p.Lx, -3,3]);
-    fontsize(48, "points")
+    fontsize(84, "points")
     sensor_size = 30;
     F_temp = griddedInterpolant(p.x, ref_solution);
     legend_info = cell(1,p.size_vars);
     legend_info{1} = '';
+    height = [0.5, 0];
     for i=1:p.size_vars
         var = vars(i);
-        legend_info{i+1} = var.observer_type + ". $N$ = " + length(var.sensors) + ", $v_p = $" + var.sensor_speed + "$\times u^*$.";
         switch var.observer_type
             case {"Target Sensors"}
-                legend_info{i+1} = "Target Sensors" + ". $N$ = " + length(var.sensors) + ", $v_p = $" + var.sensor_speed + "$\times u^*$.";
-                % legend_info{i+2} = "Target Locations.";
+                legend_info{i+1} = var.observer_type + ". $N = $" + length(var.sensors) + ", $v_p = $" + var.sensor_speed + "$\times u^*$.";
             case "Inertia"
-                % scatter(var.sensors, F_temp(var.sensors), sensor_size, var.color, 'filled', var.marker)
-                legend_info{i+1} = var.observer_type + "(\#sensors=" + length(var.sensors) + ", $St=$" + var.stokes_number + ")";
+                legend_info{i+1} = var.observer_type + ". $N = $" + length(var.sensors) + ", $St=$" + var.stokes_number + ".";
             case "Lagrangian"
-                legend_info{i+1} = var.observer_type + "(\#sensors=" + length(var.sensors) + ", $c=$" + var.amplitude + ")";
-                % legend_info{i+1} = var.observer_type + "(\#sensors=" + length(var.sensors) + ")";
-            case ""
-                legend_info{i+1} = var.observer_type + "(\# sensors=" + length(var.sensors) + ")";
+                if var.amplitude == 0
+                    legend_info{i+1} = var.observer_type + ". $N = $" + length(var.sensors) + ".";
+                else
+                    legend_info{i+1} = "$N = $" + length(var.sensors) + ", $c = $" + var.amplitude + ".";
+                end
         end
-        plot(var.sensors, 0.5, var.marker,"MarkerSize", sensor_size, "MarkerFaceColor", var.color, "DisplayName", "asd");
-        % plot(var.target_sensors, 0, var.marker,"MarkerSize", sensor_size, "MarkerFaceColor", "red", "DisplayName", "ad")
+        % plot(var.sensors, zeros(size(var.sensors)), var.marker,"MarkerSize", sensor_size, "MarkerFaceColor", var.color);
+        % plot(var.sensors, F_temp(var.sensors), var.marker,"MarkerSize", sensor_size, "MarkerFaceColor", var.color);
+        plot(var.sensors, height(i), var.marker,"MarkerSize", sensor_size, "MarkerFaceColor", var.color);
 
     end
     
-    l = legend(legend_info, "Interpreter","latex");
-    l.FontSize = 30;
+    l = legend(legend_info, "Interpreter","latex", "Location","northeast");
+    set(findall(gcf,'-property','Interpreter'),'Interpreter','latex') 
+    set(findall(gcf,'-property','TickLabelInterpreter'),'TickLabelInterpreter','latex')
+    % set(findall(gcf,'-property','Box'),'Box','off') 
+    fontsize(84, "points")
+    l.FontSize = 36;
     frame = getframe(figure(80));
     p.im{p.ti} = frame2im(frame);
     drawnow;

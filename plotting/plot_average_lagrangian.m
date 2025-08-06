@@ -27,6 +27,8 @@ ylabel("AOT error, $\frac{1}{N} \|u-\hat{u}\|_F$","Interpreter","latex")
 legend(h, {"Lagrangian. $N =$" + lagrange_info(1) + ", $c = $" + lagrange_info(2) + "$\times u^*$. Average result."}, "Interpreter","latex")
 set(gcf, 'Position', get(0, 'Screensize'));
 % l.String(1:end-1) = [];
-fontsize(48, "points")
-
+fontsize(72, "points")
+set(findall(gcf,'-property','Interpreter'),'Interpreter','latex') 
+set(findall(gcf,'-property','TickLabelInterpreter'),'TickLabelInterpreter','latex')
+set(findall(gcf,'-property','Box'),'Box','off') 
 saveas(gcf, "plots/lagrangian/" + lagrange_info(1) + "_" + lagrange_info(2) + ".jpg")

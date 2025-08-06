@@ -1,78 +1,59 @@
 function KSE_inter()
 % for iter=1:10
 % clear; clc; close all;
-close all;
-addpath("utils/");
-addpath("default_config/");
-addpath("plotting/");
-% [db] = load("data/big_basis_kse.mat");
-% [Ks] = load("K.mat");
-
-
-% p.var_Ks = Ks.Ks;
-% p.big_basis = db.datas;
-% p.L = log4m.getLogger('logs.txt');
-
-
+close all; clc;
+addpath("utils/", "default_config/", "plotting/", "target_sensors_functions/");
+profile off
+profile on
 p = initDefaultEnv();
 
 vars = DataAssimilationVariables_KSE(p);
 p.size_vars = length(vars);
 
 u_0 = cos(p.x/p.constant).*(1+sin(p.x/p.constant));
-% u_0 = cos(p.x/p.constant).*(1+cos(p.x/p.constant));
+
 u_hat = fft(u_0);
 p.soln_history(:,1) = u_0;
 
-[trunc_index] = findTruncIndex(p);
+[p] = findTruncIndex(p);
 [u_hat] = updateUHat(p, u_hat);
-[vars] = updateVarsWithAOTField(vars, u_hat, trunc_index);
+[vars] = updateVarsWithAOTField(vars, u_hat, p.trunc_index);
 
-idx = round(p.N/2);
-point_velocity = [u_0(idx)];
-sample_frequency = 1;
-
-finished_indices = [];
+varsIndicesWithMachinePrecision = zeros(1, p.size_vars);
 for ti = 1:p.num_timesteps
     u_hat_old = u_hat;
-    % p.L.info("KSE Main", "Iteration: " + ti + "/" + p.num_timesteps)
-    disp("Iteration: " + ti + "/" + p.num_timesteps)
-
+    if mod(ti, p.print_iteration) == 0
+        disp("Iteration: " + ti + "/" + p.num_timesteps)
+    end
     nonlin_term = (1i*p.k/2).*fft(real(ifft(u_hat.*p.dealias_mask)).^2);
     u_hat = p.E.*(u_hat - p.dt*nonlin_term);
-    % u_hat = u_hat_old;
     
     p.ti = ti;
     u_phys = real(ifft(u_hat,'symmetric'));
-    if mod(ti, sample_frequency) == 0
-        point_velocity = [point_velocity, u_phys(idx)];
-        p.plot_time = [p.plot_time; ti*p.dt];
-    end
     p.soln_history(:,p.n+1) = u_phys;
     p.n = p.n+1;
     
     error_counter = 0;
     for i=1:p.size_vars
-        if ismember(i, finished_indices)
-            % error_counter = error_counter + 1;
-            % continue
+        if ~varsIndicesWithMachinePrecision(i)
+            [var] = updateObservers(vars(i), p, u_hat_old, vars(i).aot_hat);
+            [var] = updateAOTSolution(var, p, u_hat, u_hat_old);
+            vars(i) = var;
+            if mod(ti, p.print_iteration) == 0
+                disp("Error="+var.error);
+            end
         end
-        if (p.stop_when_reached_machine_precision) && (ti > 1 && vars(i).error_aot(ti-1) < 1e-14)
-            % error_counter = error_counter + 1;
-            % finished_indices = [finished_indices, i];
-            % continue
-        end
-        
-        [var] = updateObservers(vars(i), p, u_hat, vars(i).aot_hat);
-        [var] = updateAOTSolution(var, p, u_hat, u_hat_old);
-        vars(i) = var;
     end
+    
     if mod(ti,p.show)==0 && p.plot_var
           p = plotVars(vars, p, u_hat);
     end
-        
+    if vars(i).error_aot(ti) < 1e-14
+        % error_counter = error_counter + 1;
+        % varsIndicesWithMachinePrecision(i) = 1;
+    end
     if error_counter == p.size_vars
-        % break
+        break
     end
 
 end
@@ -90,7 +71,8 @@ end
 % 
 % errors = [errors; vars(1).error_aot];
 % save("err.mat", "errors")
-% lagrange_info = [vars(1).num_sensors, vars(1).stokes_number, vars(1).amplitude];
+% % lagrange_info = [vars(1).num_sensors, vars(1).stokes_number, vars(1).amplitude];
+% lagrange_info = [vars(1).num_sensors, vars(1).amplitude];
 % save("lagrange_info", "lagrange_info")
 
 % save_vars = [];
@@ -113,7 +95,6 @@ end
 
 % fourierAnalysis(point_velocity, p);
 
-% plot_darkmode
 
 if p.plot_gif
     for i=1:p.size_vars
@@ -127,8 +108,9 @@ if p.plot_kse_solution
 end
 
 plotFinalErrorForVars(vars, p)
-end
 % end
+profile viewer
+end
 function U_c = computeL2NormVelocity(velocityField, p)
     % Computes the characteristic velocity as the L2 norm over space and time.
     %

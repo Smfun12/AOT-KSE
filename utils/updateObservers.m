@@ -13,7 +13,7 @@ function [var] = updateObservers(var, p, u_hat_old, aot_sol)
                     var.target_sensors = thresholdBasedTargetLocations(p, var, ref_solution);
                 end
             end
-            var.sensors = moveDirectedSensorsToTargetLocations(var, p);
+            var = moveDirectedSensorsToTargetLocations(var, p);
             
         case "Forward Sensors"
             u0 = 1.3;

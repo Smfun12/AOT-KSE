@@ -45,4 +45,6 @@ function plotFinalErrorForVars(vars, p)
     set(findall(hfig,'-property','Interpreter'),'Interpreter','latex') 
     set(findall(hfig,'-property','TickLabelInterpreter'),'TickLabelInterpreter','latex')
     set(findall(gcf,'-property','Box'),'Box','off') 
+    % set(gca, 'XTick', [], 'XTickLabel', []);
+    % set(gca, 'YTick', [], 'YTickLabel', []);
 end

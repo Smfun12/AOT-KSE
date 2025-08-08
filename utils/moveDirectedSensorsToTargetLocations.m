@@ -1,4 +1,4 @@
-function [x_sensors] = moveDirectedSensorsToTargetLocations(var, p)
+function [var] = moveDirectedSensorsToTargetLocations(var, p)
     
     L = p.Lx;
     x_target = var.target_sensors;
@@ -15,4 +15,8 @@ function [x_sensors] = moveDirectedSensorsToTargetLocations(var, p)
     x_sensors(move) = x_sensors(move) + movement(move) .* sign(direction(move));
 
     x_sensors = mod(x_sensors, L);
+
+    new_distance = abs(mod(x_sensors - var.sensors + L/2, L) - L/2);
+    var.average_speed(:, p.ti) = new_distance/p.dt;
+    var.sensors = x_sensors;
 end

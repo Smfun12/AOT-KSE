@@ -43,7 +43,7 @@ x = 0:dx:Lx - dx;
 
 lambda = 1;
 
-T = 10;
+T = 1;
 % dt = 0.001;
 if mu < 20
     dt = 0.1;
@@ -130,7 +130,7 @@ aa = NaN(1, num_timesteps);
 bracket_values = NaN(1, num_timesteps);
 snd_inequality_values = NaN(1, num_timesteps);
 sensors = linspace(x(1), x(end), nsensors);
-sensor_speed = 1e4;
+sensor_speed = inf;
 % sensors = p.x(1:2:1024);
 % mm = NaN(1, num_timesteps);
 % mm = [error_aot];
@@ -165,15 +165,13 @@ for ti = 1:num_timesteps
         K = initial_K;
         p.ref_solution = aot_solution;
         p.mu = mu;
-        [K,h] = determineH(p, nsensors, K, ref_solution);
-        c = 1e3;
+        c = 10;
+        h = determineH(p, K, ref_solution);
         u_x_star = abs(gradient(aot_solution));
-        initial_K = K;
         p.num_sensors = nsensors;
         if ti ==1 || (norm(target_sensors - sensors) < 1e-6 && error_aot(end) > 1e-13)
-        % if ti <= 2 || error_aot(ti-1) >= error_aot(ti-2)
-            % [target_sensors, ~] = getTargetLocations(h,p, true);
-            [target_sensors, ~] = intervalBasedTargetLocations(h,p);
+            var.K = K;
+            [target_sensors] = intervalBasedTargetLocations(p, var, ref_solution);
         end
         sensors = moveSpatialToTargetsPeriodically(target_sensors, sensors, sensor_speed, p);
        
@@ -191,12 +189,12 @@ for ti = 1:num_timesteps
     aot_obs = fft(ovs);
     [aot_v, ~] = interpolate_v(p, aot_solution, sensors);
     %Zero out unobserved modes on observation data
-    aot_obs(trunc_index_comp) = 0;
+    % aot_obs(trunc_index_comp) = 0;
 
     %compute nudging feedback term I_h(u-v)
     Ihumv = aot_obs - fft(aot_v);
     %Zero out all unobserved modes
-    Ihumv(trunc_index_comp) = 0;
+    % Ihumv(trunc_index_comp) = 0;
     Ihumv(1) = 0;
     Ihumv = Ihumv.*dealias_mask;
     
@@ -311,7 +309,7 @@ set(0, "CurrentFigure", error_fig)
 semilogy(dt:dt:dt*length(error), error, "LineWidth",6);
 hold on;
 semilogy(0:dt:dt*(length(error_aot)-1), error_aot, "LineWidth", 6, "Marker","o");
-% semilogy(0:dt:dt*(length(error_aot)-1), mm, "LineWidth", 6, "Color", "black");
+semilogy(0:dt:dt*(length(error_aot)-1), mm, "LineWidth", 6, "Color", "black");
 % semilogy(0:dt:dt*(length(error_aot)-1), mm, "LineWidth", 3, "Color", "black");
 % legend(["", "$e_t$, AOT error. Type=" + choice + ". " + "$N=$ " + length(sensors)+ ". $\kappa=$" + mu], "Interpreter","latex", "Location","best")
 l = legend(["", "$N=$ " + length(sensors)+ ", $v_p=$" + sensor_speed, "Designed error decay, $e^{r(h,x)\cdot t}$" ], "Interpreter","latex", "Location","best");

@@ -10,16 +10,12 @@ function [var] = updateAOTSolution(var, p, u_hat, u_hat_old)
     
     [aot_obs] = interpolateOntoobservationalGridAndBack(p, ref_solution, sort(unique(spatial_sensors)), var);
     [aot_hat] = interpolateOntoobservationalGridAndBack(p, aot_sol, sort(unique(spatial_sensors)), var);
-    aot_obs = fft(aot_obs);
-    aot_obs(p.trunc_index_comp) = 0;
 
-    Ihumv = aot_obs - fft(aot_hat);
-    Ihumv(p.trunc_index_comp) = 0;
+    Ihumv = fft(aot_obs - aot_hat);
     Ihumv(1) = 0;
     Ihumv = Ihumv.*p.dealias_mask;
 
     nonlin_aot = (1i*p.k/2).*fft(real(ifft(var.aot_hat.*p.dealias_mask)).^2);
-
     var.aot_hat = p.E.*(var.aot_hat - p.dt*nonlin_aot + p.dt*p.mu*(Ihumv));
     
     var.error_aot(p.ti) = norm(abs(u_hat - var.aot_hat),'fro')/p.N;

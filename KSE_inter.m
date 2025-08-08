@@ -3,8 +3,8 @@ function KSE_inter()
 % clear; clc; close all;
 close all; clc;
 addpath("utils/", "default_config/", "plotting/", "target_sensors_functions/");
-profile off
-profile on
+% profile off
+% profile on
 p = initDefaultEnv();
 
 vars = DataAssimilationVariables_KSE(p);
@@ -109,7 +109,7 @@ end
 
 plotFinalErrorForVars(vars, p)
 % end
-profile viewer
+% profile viewer
 end
 function U_c = computeL2NormVelocity(velocityField, p)
     % Computes the characteristic velocity as the L2 norm over space and time.

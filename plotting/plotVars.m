@@ -85,8 +85,8 @@ function [p] = plotVars(vars, p, u_hat)
                 end
         end
         % plot(var.sensors, zeros(size(var.sensors)), var.marker,"MarkerSize", sensor_size, "MarkerFaceColor", var.color);
-        % plot(var.sensors, F_temp(var.sensors), var.marker,"MarkerSize", sensor_size, "MarkerFaceColor", var.color);
-        plot(var.sensors, height(i), var.marker,"MarkerSize", sensor_size, "MarkerFaceColor", var.color);
+        plot(var.sensors, F_temp(var.sensors), var.marker,"MarkerSize", sensor_size, "MarkerFaceColor", var.color);
+        % plot(var.sensors, height(i), var.marker,"MarkerSize", sensor_size, "MarkerFaceColor", var.color);
 
     end
     

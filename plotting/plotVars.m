@@ -2,7 +2,7 @@ function [p] = plotVars(vars, p, u_hat)
     % set(gcf, 'Position', get(0, 'Screensize'));
     % for i=1:p.size_vars
     %     var = vars(i);
-    %     set(0, 'CurrentFigure', var.main_fig);
+    %     set(0, 'CurrentFigure', figure(10));
     %     subplot(2,1,1)
     %     semilogy(p.dt:p.dt:p.dt*length(var.error), var.error);
     %     hold on;
@@ -60,7 +60,7 @@ function [p] = plotVars(vars, p, u_hat)
     set(gcf, 'Position', get(0, 'Screensize'));
     plot(p.x, (ref_solution ), "LineWidth", 6);    
     hold on;
-    xlabel("$X$", "Interpreter","latex")
+    xlabel("$x$", "Interpreter","latex")
     ylabel("$u(x,t)$", Interpreter="latex")
     title(sprintf('$t$ = %1.2f',p.t(p.ti)), "Interpreter","latex");
     axis([0, p.Lx, -3,3]);
@@ -73,29 +73,30 @@ function [p] = plotVars(vars, p, u_hat)
     for i=1:p.size_vars
         var = vars(i);
         switch var.observer_type
-            case {"Target Sensors"}
-                legend_info{i+1} = var.observer_type + ". $N = $" + length(var.sensors) + ", $v_p = $" + var.sensor_speed + "$\times u^*$.";
+            case {"Directed Sensors"}
+                % legend_info{i+1} = var.observer_type + ", $N = $" + length(var.sensors) + ", $v_p \approx $" + var.sensor_speed + "$\times u^*$";
+                legend_info{i+1} = var.observer_type + ", $N = $" + length(var.sensors) + ", $v_s \approx 0.66$";
             case "Inertia"
-                legend_info{i+1} = var.observer_type + ". $N = $" + length(var.sensors) + ", $St=$" + var.stokes_number + ".";
+                legend_info{i+1} = var.observer_type + ", $N = $" + length(var.sensors) + ", $St=$" + var.stokes_number;
             case "Lagrangian"
                 if var.amplitude == 0
-                    legend_info{i+1} = var.observer_type + ". $N = $" + length(var.sensors) + ".";
+                    legend_info{i+1} = var.observer_type + ", $N = $" + length(var.sensors);
                 else
-                    legend_info{i+1} = "$N = $" + length(var.sensors) + ", $c = $" + var.amplitude + ".";
+                    legend_info{i+1} = "Pert. Lagrangian, $N = $" + length(var.sensors) + ", $c = $" + var.amplitude;
                 end
         end
         % plot(var.sensors, zeros(size(var.sensors)), var.marker,"MarkerSize", sensor_size, "MarkerFaceColor", var.color);
-        plot(var.sensors, F_temp(var.sensors), var.marker,"MarkerSize", sensor_size, "MarkerFaceColor", var.color);
+        plot(var.sensors, F_temp(var.sensors), var.marker,"MarkerSize", sensor_size, "MarkerFaceColor", var.color, "MarkerEdgeColor", var.outline_color);
         % plot(var.sensors, height(i), var.marker,"MarkerSize", sensor_size, "MarkerFaceColor", var.color);
 
     end
-    
+
     l = legend(legend_info, "Interpreter","latex", "Location","northeast");
     set(findall(gcf,'-property','Interpreter'),'Interpreter','latex') 
     set(findall(gcf,'-property','TickLabelInterpreter'),'TickLabelInterpreter','latex')
     % set(findall(gcf,'-property','Box'),'Box','off') 
-    fontsize(84, "points")
-    l.FontSize = 36;
+    fontsize(60, "points")
+    l.FontSize = 60;
     frame = getframe(figure(80));
     p.im{p.ti} = frame2im(frame);
     drawnow;

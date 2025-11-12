@@ -4,8 +4,8 @@ function [var] = updateObservers(var, p, u_hat_old, aot_sol)
     switch var.observer_type
         case {"Lagrangian", "Inertia"}
             var = updateInertiaSensors(var, interpolant, p);
-        case "Target Sensors"
-            if p.ti == 1 || (norm(var.target_sensors - var.sensors) < 1e-6 && var.error > 1e-13)
+        case "Directed Sensors"
+            if p.ti == 1 || (norm(var.target_sensors - var.sensors) < 1e-6 && var.error >= 1e-15)
                 p.num_sensors = length(var.sensors);
                 if var.alg == 1
                     var.target_sensors = intervalBasedTargetLocations(p, var, ref_solution);

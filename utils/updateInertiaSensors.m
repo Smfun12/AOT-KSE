@@ -14,6 +14,6 @@ function [var] = updateInertiaSensors(var, interpolant, p)
     end
     particle_coord_x = p.dt*(u_new + randomPerturbation);
     
-    var.stokes_number = t0*u0/p.Lx;
-    var.sensors = mod(var.sensors + particle_coord_x, p.Lx);
+    var.stokes_number = t0*u0/p.Lx; 
+    var.sensors = (mod(var.sensors + particle_coord_x, p.Lx));
 end

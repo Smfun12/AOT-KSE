@@ -11,7 +11,7 @@ x = 0:dx:L - dx;
 % mu =359;
 mu = 100;
 
-N = 1024;
+N = 33;
 choice = "Target";
 mus = [];
 nns = [];
@@ -43,7 +43,7 @@ x = 0:dx:Lx - dx;
 
 lambda = 1;
 
-T = 1;
+T = 1000;
 % dt = 0.001;
 if mu < 20
     dt = 0.1;
@@ -53,7 +53,7 @@ else
     dt = 0.001;
 end
 % dt = 1.2207e-4;
-show = 1e5;
+show = 1e7;
 
 % mu = 100;
 
@@ -212,7 +212,7 @@ for ti = 1:num_timesteps
     
     rate = error_aot(1)*exp(max(a)*t(ti));
     rate(rate <= 10e-17) = 10e-17;
-    rate(rate >= 10e10) = NaN;
+    rate(rate >= 10e15) = NaN;
     % mm(ti)= rate;
     mm = [mm ,rate];
     if (error_aot(ti) < 1e-14)
@@ -316,7 +316,8 @@ l = legend(["", "$N=$ " + length(sensors)+ ", $v_p=$" + sensor_speed, "Designed 
 % legend(["", "Actual error decay, $\epsilon_t.\ N=$ " + length(sensors)+ ". $\kappa=$" + mu, "Designed error decay, $e^{r(\kappa, h)\cdot t}$" ], "Interpreter","latex", "Location","best")
 % legend(["", "$e_t$, AOT error. N=" + length(sensors)+ ". $\kappa=$" + mu, "$e^{M(\kappa, N)\cdot t}$" ], "Interpreter","latex", "Location","best")
 xlabel("Time (simulated)", "Interpreter","latex")
-ylabel("Error $\frac{1}{N} \|u-\hat{u}\|_F$","Interpreter","latex")
+ylabel("$L^2$ norm of $\epsilon$","Interpreter","latex")
+yticks([1e-16 1e-8 1])
 fontsize(84, "points")
 % l.FontSize = 40;
 set(findall(gcf,'-property','Interpreter'),'Interpreter','latex') 

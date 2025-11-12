@@ -1,14 +1,14 @@
 function KSE_inter()
-% for iter=1:10
+% for iter=1:50
 % clear; clc; close all;
 close all; clc;
-addpath("utils/", "default_config/", "plotting/", "target_sensors_functions/");
+addpath("utils/", "default_config/", "plotting/", "target_sensors_functions/", "../KSE_CLEAN/brewer/");
 % profile off
 % profile on
 p = initDefaultEnv();
 
 vars = DataAssimilationVariables_KSE(p);
-p.size_vars = length(vars);
+p.size_vars = min(length(vars), length(fieldnames(vars)));
 
 u_0 = cos(p.x/p.constant).*(1+sin(p.x/p.constant));
 
@@ -30,13 +30,16 @@ for ti = 1:p.num_timesteps
     
     p.ti = ti;
     u_phys = real(ifft(u_hat,'symmetric'));
-    p.soln_history(:,p.n+1) = u_phys;
+    p.soln_history(:,p.n+1) = (u_phys);
     p.n = p.n+1;
     
     error_counter = 0;
     for i=1:p.size_vars
         if ~varsIndicesWithMachinePrecision(i)
             [var] = updateObservers(vars(i), p, u_hat_old, vars(i).aot_hat);
+            if p.collect_sensor_trajecotory
+                var.sensor_history(p.ti+1, :) = var.sensors;
+            end
             [var] = updateAOTSolution(var, p, u_hat, u_hat_old);
             vars(i) = var;
             if mod(ti, p.print_iteration) == 0
@@ -48,11 +51,11 @@ for ti = 1:p.num_timesteps
     if mod(ti,p.show)==0 && p.plot_var
           p = plotVars(vars, p, u_hat);
     end
-    if vars(i).error_aot(ti) < 1e-14
+    if p.size_vars > 0 && vars(i).error_aot(ti) < 1e-14
         % error_counter = error_counter + 1;
         % varsIndicesWithMachinePrecision(i) = 1;
     end
-    if error_counter == p.size_vars
+    if  p.size_vars > 0 && error_counter == p.size_vars
         break
     end
 
@@ -71,8 +74,8 @@ end
 % 
 % errors = [errors; vars(1).error_aot];
 % save("err.mat", "errors")
-% % lagrange_info = [vars(1).num_sensors, vars(1).stokes_number, vars(1).amplitude];
-% lagrange_info = [vars(1).num_sensors, vars(1).amplitude];
+% lagrange_info = [length(vars(1).sensors), vars(1).stokes_number, vars(1).amplitude];
+% % lagrange_info = [length(vars(1).sensors), vars(1).amplitude];
 % save("lagrange_info", "lagrange_info")
 
 % save_vars = [];
@@ -103,11 +106,19 @@ if p.plot_gif
 end
 
 
+
+
+if p.size_vars > 0
+    plotFinalErrorForVars(vars, p)
+end
+if p.collect_sensor_trajecotory
+    for i=1:p.size_vars
+        plotSensorTrajectoryInXTPlane(p, vars(i))
+    end
+end
 if p.plot_kse_solution
     plotKSE(p)
 end
-
-plotFinalErrorForVars(vars, p)
 % end
 % profile viewer
 end

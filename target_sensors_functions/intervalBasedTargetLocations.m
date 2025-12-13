@@ -1,7 +1,8 @@
 function [mesh]= intervalBasedTargetLocations(p, var, ref_solution) 
-    h_hat = determineH(p, var.K, ref_solution);
+    h_hat = determineH(p, var, ref_solution);
     segments = struct('xmin', 1, 'xmax', p.N, 'density', sum(1./h_hat)*p.dx);
-    while length(segments) < p.num_sensors
+    
+    while length(segments) < length(var.sensors)
     
         [~, idx] = max([segments.density]);
         seg = segments(idx);

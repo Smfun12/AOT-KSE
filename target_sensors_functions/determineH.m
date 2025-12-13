@@ -1,12 +1,12 @@
-function [h] = determineH(p, initialK, ref_solution)
+function [h] = determineH(p, var, ref_solution)
     
     number_of_generated_sensors = p.N+1;
     Kk = [];
-    K = initialK;
+    K = var.K;
     c = 10;
     u_x_star = abs(gradient(ref_solution));
     precision = 1000;
-    N = p.num_sensors;
+    N = length(var.sensors);
     while abs(number_of_generated_sensors - N) > 1e-7
         
         old_K = K;

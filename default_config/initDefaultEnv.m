@@ -3,9 +3,10 @@ function [p] = initDefaultEnv()
     p.Lx = 32*pi;
     p.dx = p.Lx/p.N;
     p.x = 0:p.dx:p.Lx -p.dx;
-    p.T = 500;
+    p.T = 10;
     p.dt = 0.01;
-    p.show = 430/p.dt;
+    p.num_timesteps = ceil(p.T/p.dt);
+    p.t = p.dt:p.dt:p.dt*p.num_timesteps;
     p.constant = .5*p.Lx/pi;
     p.observed_modes = 20;
     p.mu = 100;
@@ -14,19 +15,18 @@ function [p] = initDefaultEnv()
     p.k = [0:p.N/2-1 0 -p.N/2+1:-1]*(2*pi/p.Lx);
     p.E = exp(p.dt*(p.lambda*p.k.^2 - p.k.^4));
     p.dealias_mask = abs(p.k) <= floor((2/3)*p.N);
-    p.num_timesteps = ceil(p.T/p.dt);
-    p.plot_time=0;
+    p.characteristic_velocity = 1.3;
+    
+
+    p.show = 1e5;
     p.soln_history = zeros(p.N, ceil(p.num_timesteps/p.show)+1);
-    p.t = p.dt:p.dt:p.dt*p.num_timesteps;
     p.n = 1;
-    p.plot_kse_solution = false;
-    p.use_cache = false;
     p.save_vars = false;
     p.plot_gif = false;
-    p.plot_var = true;
+    p.plot_var = false;
     p.stop_when_reached_machine_precision = true;
     p.show_interpolation_error = false;
-    p.prod = true;
     p.im = {};
-    p.print_iteration = 1e4;
+    p.plot_kse_solution = true;
+    p.collect_sensor_trajectory = true;
 end

@@ -23,19 +23,26 @@ function [p] = plotVars(vars, p, u_hat)
                 legend_info{i+1} = var.observer_type + ", $N = $" + length(var.sensors) + ", St=" + var.stokes_number + "$";
             case {"Directed"}
                 legend_info{i+1} = "Directed, $N = " + length(var.sensors) + ", v_s \approx 0.66$";
+            case "Bias Sensors"
+                legend_info{i+1} = "Bias Sensors, $N = " + length(var.sensors) + "$";
         end
-        plot(var.sensors, F(var.sensors), var.marker,"MarkerSize", 20, "MarkerFaceColor", var.color, "MarkerEdgeColor", var.outline_color);
+        if ~isfield(var, "outline_color")
+            var.outline_color = 'k';
+        end
+        plot(var.sensors, F(var.sensors), var.marker,"MarkerSize", 30, "MarkerFaceColor", var.color, "MarkerEdgeColor", var.outline_color);
     end
 
     legend(legend_info, "Interpreter", "latex");
     set(findall(gcf,'-property','Interpreter'),'Interpreter','latex') 
     set(findall(gcf,'-property','TickLabelInterpreter'),'TickLabelInterpreter','latex')
+    set(findall(gca,'-property','TickLabelInterpreter'),'TickLabelInterpreter','latex')
 
     xlabel("$x$", "Interpreter","latex")
     ylabel("$u(x,t)$", Interpreter="latex")
-    title(sprintf('$t$ = %1.2f',p.t(p.ti)), "Interpreter","latex");
+    % title(sprintf('$t$ = %1.2f',p.t(p.ti)), "Interpreter","latex");
     axis([0, p.Lx, -3,3]);
-    fontsize(48, "points")
+    fontsize(84, "points")
+    % set(gca, 'YTick', [], 'YTickLabel', []);
     frame = getframe(figure(80));
     p.im{p.ti} = frame2im(frame);
     drawnow;

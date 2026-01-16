@@ -18,9 +18,9 @@ p.soln_history(:,1) = u_0;
 varsIndicesWithMachinePrecision = zeros(1, p.size_vars);
 for ti = 1:p.num_timesteps
     u_hat_old = u_hat;
-    if mod(ti,p.show)==0
+    % if mod(ti,p.show)==0
         disp("Iteration: " + ti + "/" + p.num_timesteps)
-    end
+    % end
     nonlin_term = (1i*p.k/2).*fft(real(ifft(u_hat.*p.dealias_mask)).^2);
     u_hat = p.E.*(u_hat - p.dt*nonlin_term);
     

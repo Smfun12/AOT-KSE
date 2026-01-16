@@ -20,7 +20,7 @@ function plotSensorTrajectoryInXTPlane(p, var)
     end
     ylabel('$x$');
     xlabel('$t$');
-    fontsize(64, "points")
+    fontsize(84, "points")
     set(findall(gcf,'-property','Interpreter'),'Interpreter','latex') 
     set(findall(gcf,'-property','TickLabelInterpreter'),'TickLabelInterpreter','latex')
     box on
